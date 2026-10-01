@@ -96,7 +96,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     if (!identifier.trim()) {
       setErrorMsg(
         signinStep === 'admin'
-          ? 'Please enter the Admin ID (Yunu)'
+          ? 'Please enter your Admin ID'
           : 'Please enter your Mobile Number or Email address'
       );
       return;
@@ -191,13 +191,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setErrorMsg('');
     setErrorAccountRole(null);
     setSigninStep(targetRole);
-    if (targetRole === 'admin') {
-      if (!identifier) setIdentifier('Yunu');
-      if (!password) setPassword('1122');
-    } else {
-      if (identifier === 'Yunu') setIdentifier('');
-      if (password === '1122') setPassword('');
-    }
+    setIdentifier('');
+    setPassword('');
   };
 
   return (
@@ -361,7 +356,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   </div>
                   <div>
                     <h4 className="text-xs font-bold text-slate-900">Platform Administrator</h4>
-                    <p className="text-[10px] text-slate-500">Sign in with Admin ID (Yunu) & Password (1122)</p>
+                    <p className="text-[10px] text-slate-500">Master console for authorized administrators</p>
                   </div>
                 </div>
                 <ArrowRight className="w-4 h-4 text-purple-600" />
@@ -496,7 +491,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     required
                     placeholder={
                       signinStep === 'admin'
-                        ? 'Yunu'
+                        ? 'Enter Admin ID'
                         : signinStep === 'shopkeeper'
                         ? 'e.g. 98765 43210 or store@example.com'
                         : 'e.g. 98765 43210 or you@example.com'
@@ -525,7 +520,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   <input
                     type={showPassword ? 'text' : 'password'}
                     required
-                    placeholder={signinStep === 'admin' ? '1122' : 'Enter your password'}
+                    placeholder={signinStep === 'admin' ? 'Enter password' : 'Enter your password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="w-full pl-9 pr-10 py-2.5 bg-slate-50 focus:bg-white rounded-xl text-sm border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition"
@@ -634,8 +629,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   </button>
                 </p>
               ) : (
-                <p className="text-xs text-slate-500">
-                  Default credentials: ID: <b>Yunu</b> | Password: <b>1122</b>
+                <p className="text-xs text-slate-400">
+                  Platform administration console
                 </p>
               )}
             </div>

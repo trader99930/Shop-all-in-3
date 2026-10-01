@@ -994,6 +994,37 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ onInsp
               />
             </div>
 
+            {/* Admin Platform UPI ID */}
+            <div className="sm:col-span-2 p-4 bg-emerald-50/70 rounded-2xl border-2 border-emerald-200 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-black text-xs">
+                    UPI
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-slate-900 text-xs">
+                      Admin Platform UPI ID (सुपर एडमिन UPI ID)
+                    </h4>
+                    <p className="text-[11px] text-slate-600">
+                      Default UPI ID for platform fallback when a vendor has not configured their own UPI ID.
+                    </p>
+                  </div>
+                </div>
+                {settingsMap.admin_upi_id && (
+                  <span className="text-[11px] font-mono font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">
+                    {settingsMap.admin_upi_id}
+                  </span>
+                )}
+              </div>
+              <input
+                type="text"
+                placeholder="e.g. yunaypay@upi or admin@okhdfcbank"
+                value={settingsMap.admin_upi_id || ''}
+                onChange={(e) => setSettingsMap({ ...settingsMap, admin_upi_id: e.target.value })}
+                className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl font-mono text-xs font-bold text-slate-800 focus:outline-none focus:border-emerald-500"
+              />
+            </div>
+
             <div>
               <label className="font-bold text-slate-700 block mb-1">Commission Model</label>
               <select

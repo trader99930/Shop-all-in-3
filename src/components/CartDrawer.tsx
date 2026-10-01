@@ -14,10 +14,13 @@ import {
   CreditCard,
   Banknote,
   CheckCircle,
+  QrCode,
+  ShieldCheck,
 } from 'lucide-react';
 import { useCart } from '../context/CartContext.tsx';
 import { useAuth } from '../context/AuthContext.tsx';
 import { Order } from '../types/index.ts';
+import { QRCodeModal } from './QRCodeModal.tsx';
 
 interface CartDrawerProps {
   onOrderPlaced: (order: Order) => void;
@@ -62,6 +65,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOrderPlaced }) => {
   );
   const [submittingOrder, setSubmittingOrder] = useState(false);
   const [orderError, setOrderError] = useState('');
+  const [showUpiModal, setShowUpiModal] = useState(false);
 
   const minOrderAmount = Number(cartShop?.minOrderAmount || 0);
   const freeDeliveryThreshold = Number(cartShop?.freeDeliveryThreshold || 500);
@@ -80,8 +84,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOrderPlaced }) => {
     }
   };
 
-  const handlePlaceOrder = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const submitOrderToBackend = async (confirmedUpiRef?: string) => {
     if (!cartShop || items.length === 0) return;
 
     if (orderType === 'delivery' && !deliveryAddress.trim()) {
@@ -107,6 +110,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOrderPlaced }) => {
         landmark,
         deliveryInstructions,
         paymentMethod,
+        upiReference: confirmedUpiRef || '',
         couponCode: appliedCoupon?.code,
         items: items.map((i) => ({
           productId: i.product.id,
@@ -123,8 +127,10 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOrderPlaced }) => {
 
       const data = await res.json();
       if (res.ok) {
+        setShowUpiModal(false);
         setIsCheckingOut(false);
         setIsCartOpen(false);
+        clearCart();
         onOrderPlaced(data.order);
       } else {
         setOrderError(data.error || 'Failed to place order. Please try again.');
@@ -134,6 +140,29 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOrderPlaced }) => {
     } finally {
       setSubmittingOrder(false);
     }
+  };
+
+  const handleCheckoutSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setOrderError('');
+
+    if (orderType === 'delivery' && !deliveryAddress.trim()) {
+      setOrderError('Please enter your delivery address');
+      return;
+    }
+    if (!customerPhone.trim()) {
+      setOrderError('Please enter a valid mobile number');
+      return;
+    }
+
+    // When customer chooses UPI payment, open QRCodeModal to let them scan the vendor's specific UPI QR!
+    if (paymentMethod === 'upi_online') {
+      setShowUpiModal(true);
+      return;
+    }
+
+    // For COD or Pay at store, place directly
+    submitOrderToBackend();
   };
 
   return (
@@ -415,7 +444,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOrderPlaced }) => {
           </div>
         ) : (
           /* Checkout View */
-          <form onSubmit={handlePlaceOrder} className="flex-1 overflow-y-auto p-4 sm:p-5 flex flex-col justify-between">
+          <form onSubmit={handleCheckoutSubmit} className="flex-1 overflow-y-auto p-4 sm:p-5 flex flex-col justify-between">
             <div className="space-y-4 text-xs">
               {orderError && (
                 <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs">
@@ -548,18 +577,38 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOrderPlaced }) => {
                     </div>
                   </label>
 
-                  <label className="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer">
+                  <label className={`flex items-start gap-2.5 p-3 rounded-2xl border transition cursor-pointer ${
+                    paymentMethod === 'upi_online'
+                      ? 'border-emerald-500 bg-emerald-50/70 ring-1 ring-emerald-500/30'
+                      : 'border-slate-200 hover:bg-slate-50'
+                  }`}>
                     <input
                       type="radio"
                       name="paymentMethod"
                       checked={paymentMethod === 'upi_online'}
                       onChange={() => setPaymentMethod('upi_online')}
-                      className="text-emerald-600"
+                      className="mt-0.5 text-emerald-600"
                     />
-                    <CreditCard className="w-4 h-4 text-emerald-600" />
-                    <div>
-                      <p className="font-bold text-slate-800">UPI / Online Payment (Simulated)</p>
-                      <p className="text-[10px] text-slate-500">Instant digital confirmation</p>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <CreditCard className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <p className="font-bold text-slate-800 text-xs">UPI Payment (QR Code Scan & Pay)</p>
+                        <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase">
+                          Direct to Vendor
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-600 mt-0.5 leading-snug">
+                        Scan the vendor's dynamic QR code with Google Pay, PhonePe, Paytm, or BHIM at checkout.
+                      </p>
+                      {cartShop?.upiId ? (
+                        <p className="text-[10px] font-mono text-emerald-800 font-bold mt-1 bg-emerald-100/60 px-2 py-0.5 rounded w-fit">
+                          Payee: {cartShop.upiId}
+                        </p>
+                      ) : (
+                        <p className="text-[10px] text-slate-500 mt-1">
+                          Vendor UPI QR code will be generated upon proceeding.
+                        </p>
+                      )}
                     </div>
                   </label>
 
@@ -591,17 +640,23 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOrderPlaced }) => {
                 <button
                   type="button"
                   onClick={() => setIsCheckingOut(false)}
-                  className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition"
+                  className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition cursor-pointer"
                 >
                   Back to Cart
                 </button>
                 <button
                   type="submit"
                   disabled={submittingOrder}
-                  className="flex-2 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2"
+                  className="flex-2 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                 >
                   {submittingOrder ? (
                     <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+                  ) : paymentMethod === 'upi_online' ? (
+                    <>
+                      <QrCode className="w-4 h-4" />
+                      <span>Scan UPI QR & Pay (₹{finalTotal.toFixed(2)})</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
                   ) : (
                     <>
                       <span>Place Order & Generate Bill</span>
@@ -617,6 +672,18 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOrderPlaced }) => {
           </form>
         )}
       </div>
+
+      {/* Manual UPI Payment Modal */}
+      {showUpiModal && cartShop && (
+        <QRCodeModal
+          isOpen={showUpiModal}
+          shop={cartShop}
+          mode="payment"
+          amount={finalTotal}
+          onPaymentConfirmed={(ref) => submitOrderToBackend(ref)}
+          onClose={() => setShowUpiModal(false)}
+        />
+      )}
     </>
   );
 };

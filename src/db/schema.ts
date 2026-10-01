@@ -20,6 +20,7 @@ export const users = pgTable('users', {
   status: text('status').notNull().default('active'), // 'active' | 'blocked'
   passwordHash: text('password_hash').default(''),
   avatarUrl: text('avatar_url').default(''),
+  upiId: text('upi_id').default(''), // Admin / User UPI ID
   createdAt: timestamp('created_at').defaultNow(),
 });
 
@@ -64,6 +65,7 @@ export const shops = pgTable('shops', {
   minOrderAmount: numeric('min_order_amount').default('100'),
   deliveryFee: numeric('delivery_fee').default('30'),
   freeDeliveryThreshold: numeric('free_delivery_threshold').default('500'),
+  upiId: text('upi_id').default(''), // Vendor shop UPI ID for direct customer payment QR
   announcement: text('announcement').default(''),
   createdAt: timestamp('created_at').defaultNow(),
 });
@@ -158,6 +160,7 @@ export const orders = pgTable('orders', {
   totalAmount: numeric('total_amount').notNull(),
   paymentMethod: text('payment_method').notNull().default('cash_on_delivery'), // 'cash_on_delivery' | 'pay_at_store' | 'upi_online'
   paymentStatus: text('payment_status').notNull().default('pending'), // 'pending' | 'paid' | 'refunded'
+  upiReference: text('upi_reference').default(''), // Customer entered UTR / Transaction reference
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });

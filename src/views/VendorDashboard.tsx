@@ -27,6 +27,8 @@ import {
   Building2,
   MapPin,
   Percent,
+  CreditCard,
+  Check,
 } from 'lucide-react';
 import { Shop, Product, ProductVariant, Order, Offer, Invoice } from '../types/index.ts';
 import { useAuth } from '../context/AuthContext.tsx';
@@ -68,6 +70,10 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
   const [productSaveError, setProductSaveError] = useState<string>('');
   const [showBulkUploadModal, setShowBulkUploadModal] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
+  const [qrModalMode, setQrModalMode] = useState<'share' | 'payment'>('share');
+  const [upiSaving, setUpiSaving] = useState(false);
+  const [upiSaveSuccess, setUpiSaveSuccess] = useState(false);
+  const [upiSaveError, setUpiSaveError] = useState('');
   const [showAddOfferModal, setShowAddOfferModal] = useState(false);
   const [selectedOrderForInvoice, setSelectedOrderForInvoice] = useState<Order | null>(null);
 
@@ -111,6 +117,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
   const [settingMinOrder, setSettingMinOrder] = useState('100');
   const [settingFreeThreshold, setSettingFreeThreshold] = useState('500');
   const [settingAnnouncement, setSettingAnnouncement] = useState('');
+  const [settingUpiId, setSettingUpiId] = useState('');
   const [settingTempClosed, setSettingTempClosed] = useState(false);
   const [settingsSaved, setSettingsSaved] = useState(false);
 
@@ -186,6 +193,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
         setSettingMinOrder(sh.minOrderAmount);
         setSettingFreeThreshold(sh.freeDeliveryThreshold);
         setSettingAnnouncement(sh.announcement || '');
+        setSettingUpiId(sh.upiId || '');
         setSettingTempClosed(sh.isTemporarilyClosed);
 
         // Fetch Orders
@@ -509,6 +517,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
           freeDeliveryThreshold: settingFreeThreshold,
           announcement: settingAnnouncement,
           isTemporarilyClosed: settingTempClosed,
+          upiId: settingUpiId.trim(),
         }),
       });
       if (res.ok) {
@@ -519,6 +528,39 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
       }
     } catch (err) {
       console.error('Failed to save settings:', err);
+    }
+  };
+
+  const handleQuickSaveUpi = async (customUpi?: string) => {
+    if (!shop) return;
+    const targetUpi = (customUpi !== undefined ? customUpi : settingUpiId).trim();
+    if (targetUpi && !targetUpi.includes('@')) {
+      setUpiSaveError('Please enter a valid UPI ID containing "@" (e.g. yourstore@upi)');
+      return;
+    }
+    setUpiSaving(true);
+    setUpiSaveError('');
+    try {
+      const res = await fetch(`/api/shops/${shop.id}`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          upiId: targetUpi,
+        }),
+      });
+      if (res.ok) {
+        setUpiSaveSuccess(true);
+        setTimeout(() => setUpiSaveSuccess(false), 3000);
+        await refreshSession();
+        await loadShopData(shop.slug);
+      } else {
+        const d = await res.json();
+        setUpiSaveError(d.error || 'Failed to update UPI ID');
+      }
+    } catch (err: any) {
+      setUpiSaveError(err.message || 'Error updating UPI ID');
+    } finally {
+      setUpiSaving(false);
     }
   };
 
@@ -659,19 +701,99 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
         <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => onViewPublicStore(shop.slug)}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold rounded-xl border border-emerald-200 transition"
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold rounded-xl border border-emerald-200 transition cursor-pointer"
           >
             <Eye className="w-3.5 h-3.5" />
             <span>View Live Store</span>
           </button>
 
           <button
-            onClick={() => setShowQRModal(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition"
+            onClick={() => {
+              setQrModalMode('payment');
+              setShowQRModal(true);
+            }}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition shadow-xs cursor-pointer"
+            title="Preview customer checkout UPI QR"
+          >
+            <CreditCard className="w-3.5 h-3.5" />
+            <span>UPI Payment QR</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setQrModalMode('share');
+              setShowQRModal(true);
+            }}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
           >
             <QrCode className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Counter Standee / QR</span>
+            <span>Standee / Store QR</span>
           </button>
+        </div>
+      </div>
+
+      {/* Direct UPI Payment Setup / Status Banner */}
+      <div
+        className={`p-4 rounded-3xl border transition flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-xs ${
+          shop.upiId
+            ? 'bg-gradient-to-r from-emerald-50 via-teal-50/50 to-white border-emerald-200'
+            : 'bg-gradient-to-r from-amber-50 via-orange-50/40 to-white border-amber-300'
+        }`}
+      >
+        <div className="flex items-center gap-3">
+          <div
+            className={`w-11 h-11 rounded-2xl flex items-center justify-center font-black text-xs shrink-0 shadow-sm ${
+              shop.upiId
+                ? 'bg-gradient-to-tr from-emerald-600 to-teal-600 text-white'
+                : 'bg-gradient-to-tr from-amber-500 to-orange-500 text-white'
+            }`}
+          >
+            UPI
+          </div>
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="text-sm font-black text-slate-900 tracking-tight">
+                Direct Merchant UPI Payment (सीधा दुकानदार के खाते में भुगतान)
+              </h3>
+              {shop.upiId ? (
+                <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black border border-emerald-300">
+                  Active: {shop.upiId}
+                </span>
+              ) : (
+                <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-black border border-amber-300 animate-pulse">
+                  UPI ID Not Configured
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-slate-600 mt-0.5">
+              {shop.upiId
+                ? `Customers will scan your personal UPI QR at checkout and pay directly to ${shop.upiId} without third-party deductions.`
+                : 'Add your UPI ID now so customers can scan and pay directly to your Google Pay, PhonePe, Paytm, or BHIM account!'}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          {shop.upiId ? (
+            <button
+              onClick={() => {
+                setQrModalMode('payment');
+                setShowQRModal(true);
+              }}
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-xl shadow-sm transition flex items-center gap-1.5 cursor-pointer"
+            >
+              <QrCode className="w-3.5 h-3.5" />
+              <span>Preview Payment QR</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => setActiveTab('settings')}
+              className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-black rounded-xl shadow-sm transition flex items-center gap-1.5 cursor-pointer"
+            >
+              <CreditCard className="w-3.5 h-3.5" />
+              <span>Set Up UPI ID Now</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -1425,6 +1547,109 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
               />
             </div>
 
+            {/* Direct UPI Payment Setup (मैनुअल यूपीआई पेमेंट सेटिंग्स) */}
+            <div className="sm:col-span-2 p-5 bg-gradient-to-br from-emerald-50/90 via-teal-50/60 to-white rounded-3xl border-2 border-emerald-300 space-y-4 shadow-xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-600 text-white flex items-center justify-center font-black text-xs shadow-xs shrink-0">
+                    UPI
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-black text-slate-900 flex items-center gap-2">
+                      <span>Shop UPI Payment ID (दुकानदार की UPI आईडी)</span>
+                      {settingUpiId ? (
+                        <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black border border-emerald-300">
+                          Active & Ready
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-black border border-amber-300">
+                          Not Configured
+                        </span>
+                      )}
+                    </h4>
+                    <p className="text-xs text-slate-600 mt-0.5">
+                      ग्राहक चेकआउट के समय इस UPI ID का डायनामिक QR कोड स्कैन करके सीधा आपको भुगतान करेंगे।
+                    </p>
+                  </div>
+                </div>
+
+                {/* Quick Action Preview Button */}
+                {settingUpiId && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setQrModalMode('payment');
+                      setShowQRModal(true);
+                    }}
+                    className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-xl shadow-xs transition cursor-pointer self-start sm:self-auto shrink-0"
+                  >
+                    <QrCode className="w-3.5 h-3.5" />
+                    <span>Test / Preview QR</span>
+                  </button>
+                )}
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1.5 text-xs">
+                  Vendor UPI ID / VPA (दुकानदार की UPI आईडी दर्ज करें) *
+                </label>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      value={settingUpiId}
+                      onChange={(e) => {
+                        setSettingUpiId(e.target.value);
+                        setUpiSaveError('');
+                      }}
+                      placeholder="e.g. 9811122334@paytm, store@okhdfcbank, or shop@upi"
+                      className="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-300 rounded-xl font-mono text-xs focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 font-bold text-slate-800 shadow-2xs"
+                    />
+                    <CreditCard className="w-4 h-4 text-emerald-600 absolute left-3 top-3" />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleQuickSaveUpi()}
+                    disabled={upiSaving}
+                    className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-xl transition shadow-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shrink-0"
+                  >
+                    {upiSaving ? (
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <Check className="w-4 h-4" />
+                        <span>Save UPI ID</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {upiSaveSuccess && (
+                  <div className="mt-2 p-2 bg-emerald-100/80 border border-emerald-300 text-emerald-900 rounded-xl text-xs font-bold flex items-center gap-2 animate-in fade-in">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>UPI ID updated successfully! Customers can now scan and pay to this ID.</span>
+                  </div>
+                )}
+
+                {upiSaveError && (
+                  <div className="mt-2 p-2 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs font-bold flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                    <span>{upiSaveError}</span>
+                  </div>
+                )}
+
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between text-[11px] text-slate-500 mt-2 gap-1">
+                  <span>Supported apps: Google Pay, PhonePe, Paytm, BHIM, Amazon Pay & all UPI banking apps.</span>
+                  {shop.upiId && (
+                    <span className="text-emerald-700 font-bold">
+                      Saved in Database: <span className="font-mono">{shop.upiId}</span>
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
             <div className="sm:col-span-2">
               <label className="font-bold text-slate-700 block mb-1">Store Announcement</label>
               <input
@@ -1936,8 +2161,15 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
         </div>
       )}
 
-      {/* QR Code Standee Modal */}
-      {showQRModal && <QRCodeModal shop={shop} onClose={() => setShowQRModal(false)} />}
+      {/* QR Code Standee / Payment Modal */}
+      {showQRModal && (
+        <QRCodeModal
+          shop={shop}
+          mode={qrModalMode}
+          amount={qrModalMode === 'payment' ? 100 : 0}
+          onClose={() => setShowQRModal(false)}
+        />
+      )}
 
       {/* Tax Invoice Modal for Merchant */}
       {selectedOrderForInvoice && (

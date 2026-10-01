@@ -229,7 +229,7 @@ apiRouter.post('/auth/login', async (req: Request, res: Response) => {
     if (isAdminIdentifier && (cleanLower === 'yunu' || cleanLower === 'admin' || cleanLower === 'yunay admin' || cleanLower.includes('admin@'))) {
       if (password !== '1122') {
         return res.status(401).json({
-          error: 'Incorrect Admin password. Please enter 1122.',
+          error: 'Incorrect Admin password. Please check your credentials.',
         });
       }
 
@@ -305,7 +305,7 @@ apiRouter.post('/auth/login', async (req: Request, res: Response) => {
       if (user.role === 'super_admin') {
         if (password !== '1122') {
           return res.status(401).json({
-            error: 'Super Admin access requires the master password (1122).',
+            error: 'Super Admin access requires the master password.',
           });
         }
       } else if (user.passwordHash) {
@@ -473,7 +473,8 @@ apiRouter.post('/auth/register-customer', async (req: Request, res: Response) =>
 apiRouter.post('/auth/register-vendor', optionalAuth, async (req: AuthRequest, res: Response) => {
   try {
     const {
-      ownerName,
+      ownerName: rawOwnerName,
+      name: altName,
       email,
       phone,
       password,
@@ -496,7 +497,10 @@ apiRouter.post('/auth/register-vendor', optionalAuth, async (req: AuthRequest, r
       minOrderAmount,
       deliveryFee,
       freeDeliveryThreshold,
+      upiId,
     } = req.body;
+
+    const ownerName = rawOwnerName || altName;
 
     if (!shopName || !ownerName || !email || !address || !city || !pincode) {
       return res.status(400).json({ error: 'Missing required onboarding fields' });
@@ -629,6 +633,7 @@ apiRouter.post('/auth/register-vendor', optionalAuth, async (req: AuthRequest, r
         minOrderAmount: String(minOrderAmount || 100),
         deliveryFee: String(deliveryFee || 30),
         freeDeliveryThreshold: String(freeDeliveryThreshold || 500),
+        upiId: upiId ? String(upiId).trim() : '',
       })
       .returning();
 
@@ -927,38 +932,95 @@ apiRouter.put('/shops/:id', requireAuth, async (req: AuthRequest, res: Response)
       deliveryFee,
       freeDeliveryThreshold,
       announcement,
+      upiId,
     } = req.body;
+
+    const updatePayload: any = {};
+    if (name !== undefined) updatePayload.name = name;
+    if (category !== undefined) updatePayload.category = category;
+    if (description !== undefined) updatePayload.description = description;
+    if (address !== undefined) updatePayload.address = address;
+    if (city !== undefined) updatePayload.city = city;
+    if (state !== undefined) updatePayload.state = state;
+    if (pincode !== undefined) updatePayload.pincode = pincode;
+    if (businessPhone !== undefined) updatePayload.businessPhone = businessPhone;
+    if (logoUrl !== undefined) updatePayload.logoUrl = logoUrl;
+    if (bannerUrl !== undefined) updatePayload.bannerUrl = bannerUrl;
+    if (themeColor !== undefined) updatePayload.themeColor = themeColor;
+    if (isTemporarilyClosed !== undefined) updatePayload.isTemporarilyClosed = Boolean(isTemporarilyClosed);
+    if (openingTime !== undefined) updatePayload.openingTime = openingTime;
+    if (closingTime !== undefined) updatePayload.closingTime = closingTime;
+    if (weeklyClosedDay !== undefined) updatePayload.weeklyClosedDay = weeklyClosedDay;
+    if (homeDeliveryEnabled !== undefined) updatePayload.homeDeliveryEnabled = homeDeliveryEnabled !== false;
+    if (pickupEnabled !== undefined) updatePayload.pickupEnabled = pickupEnabled !== false;
+    if (deliveryRadiusKm !== undefined) updatePayload.deliveryRadiusKm = String(deliveryRadiusKm || 10);
+    if (minOrderAmount !== undefined) updatePayload.minOrderAmount = String(minOrderAmount || 100);
+    if (deliveryFee !== undefined) updatePayload.deliveryFee = String(deliveryFee || 30);
+    if (freeDeliveryThreshold !== undefined) updatePayload.freeDeliveryThreshold = String(freeDeliveryThreshold || 500);
+    if (announcement !== undefined) updatePayload.announcement = announcement;
+    if (upiId !== undefined) updatePayload.upiId = String(upiId).trim();
 
     const [updated] = await db
       .update(shops)
-      .set({
-        name,
-        category,
-        description,
-        address,
-        city,
-        state,
-        pincode,
-        businessPhone,
-        logoUrl,
-        bannerUrl,
-        themeColor,
-        isTemporarilyClosed: Boolean(isTemporarilyClosed),
-        openingTime,
-        closingTime,
-        weeklyClosedDay,
-        homeDeliveryEnabled: homeDeliveryEnabled !== false,
-        pickupEnabled: pickupEnabled !== false,
-        deliveryRadiusKm: String(deliveryRadiusKm || 10),
-        minOrderAmount: String(minOrderAmount || 100),
-        deliveryFee: String(deliveryFee || 30),
-        freeDeliveryThreshold: String(freeDeliveryThreshold || 500),
-        announcement,
-      })
+      .set(updatePayload)
       .where(eq(shops.id, shopId))
       .returning();
 
     res.json(updated);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Generate Shop UPI Payment QR Code
+apiRouter.get('/shops/:id/upi-qr', async (req: Request, res: Response) => {
+  try {
+    const shopId = parseInt(req.params.id, 10);
+    const found = await db.select().from(shops).where(eq(shops.id, shopId)).limit(1);
+    if (found.length === 0) return res.status(404).json({ error: 'Shop not found' });
+
+    const shop = found[0];
+    const amount = req.query.amount ? String(req.query.amount).trim() : '';
+
+    // Check vendor's configured UPI ID, or fallback to platform admin UPI ID
+    let effectiveUpiId = (shop.upiId || '').trim();
+    if (!effectiveUpiId) {
+      const adminSetting = await db
+        .select()
+        .from(platformSettings)
+        .where(eq(platformSettings.key, 'admin_upi_id'))
+        .limit(1);
+      if (adminSetting.length > 0 && adminSetting[0].value) {
+        effectiveUpiId = adminSetting[0].value.trim();
+      } else {
+        effectiveUpiId = 'yunaypay@upi'; // Default platform merchant fallback
+      }
+    }
+
+    // Standard NPCI UPI URI Scheme: upi://pay?pa=VPA&pn=NAME&am=AMOUNT&cu=INR&tn=NOTE
+    let upiUri = `upi://pay?pa=${encodeURIComponent(effectiveUpiId)}&pn=${encodeURIComponent(shop.name)}&cu=INR`;
+    if (amount && Number(amount) > 0) {
+      upiUri += `&am=${encodeURIComponent(amount)}`;
+    }
+    upiUri += `&tn=${encodeURIComponent('Order at ' + shop.name)}`;
+
+    const qrDataUrl = await QRCode.toDataURL(upiUri, {
+      width: 400,
+      margin: 2,
+      color: {
+        dark: '#0f172a',
+        light: '#ffffff',
+      },
+    });
+
+    res.json({
+      shopName: shop.name,
+      shopSlug: shop.slug,
+      upiId: effectiveUpiId,
+      amount,
+      upiUri,
+      qrDataUrl,
+    });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
@@ -1583,6 +1645,7 @@ apiRouter.post('/orders', requireAuth, async (req: AuthRequest, res: Response) =
       landmark,
       deliveryInstructions,
       paymentMethod, // 'cash_on_delivery' | 'pay_at_store' | 'upi_online'
+      upiReference,
       couponCode,
       items, // array of { productId, variantId, quantity }
     } = req.body;
@@ -1718,6 +1781,7 @@ apiRouter.post('/orders', requireAuth, async (req: AuthRequest, res: Response) =
         totalAmount: String(calculatedTotal),
         paymentMethod: paymentMethod || 'cash_on_delivery',
         paymentStatus: paymentMethod === 'upi_online' ? 'paid' : 'pending',
+        upiReference: upiReference ? String(upiReference).trim() : '',
       })
       .returning();
 

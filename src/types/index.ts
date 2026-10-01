@@ -9,6 +9,7 @@ export interface User {
   role: UserRole;
   status: 'active' | 'blocked';
   avatarUrl?: string;
+  upiId?: string;
   shop?: Shop | null;
 }
 
@@ -27,6 +28,7 @@ export interface Shop {
   logoUrl?: string;
   bannerUrl?: string;
   themeColor: string;
+  upiId?: string;
   status: 'pending' | 'active' | 'rejected' | 'suspended';
   isTemporarilyClosed: boolean;
   openingTime: string;
@@ -131,6 +133,7 @@ export interface Order {
   totalAmount: string;
   paymentMethod: 'cash_on_delivery' | 'pay_at_store' | 'upi_online';
   paymentStatus: 'pending' | 'paid' | 'refunded';
+  upiReference?: string;
   createdAt: string;
   updatedAt: string;
   items?: OrderItem[];
