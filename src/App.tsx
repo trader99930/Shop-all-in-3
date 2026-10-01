@@ -27,6 +27,7 @@ const MainApp: React.FC = () => {
   const [showVendorOnboarding, setShowVendorOnboarding] = useState<boolean>(false);
   const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
   const [authModalMode, setAuthModalMode] = useState<'signin' | 'signup'>('signin');
+  const [authModalRole, setAuthModalRole] = useState<'customer' | 'shopkeeper' | 'admin' | undefined>(undefined);
 
   // Sync active shop slug with current user's shop if available
   useEffect(() => {
@@ -55,8 +56,12 @@ const MainApp: React.FC = () => {
     }
   }, [currentUser, currentTab]);
 
-  const handleOpenLogin = (mode: 'signin' | 'signup' = 'signin') => {
+  const handleOpenLogin = (
+    mode: 'signin' | 'signup' = 'signin',
+    role?: 'customer' | 'shopkeeper' | 'admin'
+  ) => {
     setAuthModalMode(mode);
+    setAuthModalRole(role);
     setShowAuthModal(true);
   };
 
@@ -199,6 +204,7 @@ const MainApp: React.FC = () => {
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
         initialMode={authModalMode}
+        initialRole={authModalRole}
         onOpenVendorOnboarding={() => {
           setShowAuthModal(false);
           setShowVendorOnboarding(true);

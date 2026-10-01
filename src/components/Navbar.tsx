@@ -27,7 +27,7 @@ interface NavbarProps {
   setSearchQuery: (query: string) => void;
   onOpenVendorOnboarding: () => void;
   onOpenPolicies: (type: string) => void;
-  onOpenLogin: (mode?: 'signin' | 'signup') => void;
+  onOpenLogin: (mode?: 'signin' | 'signup', role?: 'customer' | 'shopkeeper' | 'admin') => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({

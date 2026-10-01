@@ -28,11 +28,13 @@ interface AuthContextType {
 
   loginWithIdentifier: (
     identifier: string,
-    password?: string
+    password?: string,
+    intendedRole?: 'shopkeeper' | 'customer'
   ) => Promise<{
     success: boolean;
     user?: User;
     error?: string;
+    accountRole?: 'customer' | 'shopkeeper' | 'super_admin';
   }>;
 
   registerCustomer: (
@@ -264,11 +266,13 @@ export const AuthProvider: React.FC<{
 
   const loginWithIdentifier = async (
     identifier: string,
-    password?: string
+    password?: string,
+    intendedRole?: 'shopkeeper' | 'customer'
   ): Promise<{
     success: boolean;
     user?: User;
     error?: string;
+    accountRole?: 'customer' | 'shopkeeper' | 'super_admin';
   }> => {
     setLoading(true);
 
@@ -280,7 +284,7 @@ export const AuthProvider: React.FC<{
         return {
           success: false,
           error:
-            'Please enter your email address.',
+            'Please enter your mobile number or email address.',
         };
       }
 
@@ -296,97 +300,94 @@ export const AuthProvider: React.FC<{
        * ------------------------------------------------
        * FIREBASE EMAIL LOGIN
        * ------------------------------------------------
-       *
-       * Email/password users are authenticated
-       * directly by Firebase.
        */
 
       if (cleanIdentifier.includes('@')) {
-        const credential =
-          await signInWithEmailAndPassword(
-            auth,
-            cleanIdentifier,
-            password
+        try {
+          const credential =
+            await signInWithEmailAndPassword(
+              auth,
+              cleanIdentifier,
+              password
+            );
+
+          const firebaseUser =
+            credential.user;
+
+          const token =
+            await getIdToken(
+              firebaseUser,
+              true
+            );
+
+          setIdToken(token);
+
+          localStorage.setItem(
+            'yunay_session_token',
+            token
           );
 
-        const firebaseUser =
-          credential.user;
-
-        /*
-         * Get Firebase ID token.
-         */
-
-        const token =
-          await getIdToken(
-            firebaseUser,
-            true
+          localStorage.setItem(
+            'yunay_active_uid',
+            firebaseUser.uid
           );
 
-        setIdToken(token);
+          const res = await fetch(
+            '/api/auth/me',
+            {
+              method: 'GET',
+              headers: {
+                Authorization:
+                  `Bearer ${token}`,
+                'x-yunay-uid':
+                  firebaseUser.uid,
+              },
+            }
+          );
 
-        localStorage.setItem(
-          'yunay_session_token',
-          token
-        );
+          const data =
+            await res.json();
 
-        localStorage.setItem(
-          'yunay_active_uid',
-          firebaseUser.uid
-        );
+          if (res.ok && data?.user) {
+            // Role enforcement: if intended role doesn't match
+            if (intendedRole === 'shopkeeper' && data.user.role === 'customer') {
+              return {
+                success: false,
+                error: 'This account is registered as a Customer. Please choose "Customer Sign In" to access your account.',
+              };
+            }
+            if (intendedRole === 'customer' && data.user.role === 'shopkeeper') {
+              return {
+                success: false,
+                error: 'This account is registered as a Shop Owner. Please choose "Shop Owner Sign In" to access your store.',
+              };
+            }
 
-        /*
-         * Ask backend for the YUNAY profile.
-         */
+            setCurrentUser(
+              data.user
+            );
 
-        const res = await fetch(
-          '/api/auth/me',
-          {
-            method: 'GET',
-            headers: {
-              Authorization:
-                `Bearer ${token}`,
-              'x-yunay-uid':
-                firebaseUser.uid,
-            },
+            localStorage.setItem(
+              'yunay_active_uid',
+              data.user.uid
+            );
+
+            return {
+              success: true,
+              user: data.user,
+            };
           }
-        );
-
-        const data =
-          await res.json();
-
-        if (!res.ok || !data?.user) {
-          return {
-            success: false,
-            error:
-              data?.error ||
-              'Firebase login succeeded, but your YUNAY profile could not be loaded.',
-          };
+        } catch (fbErr: any) {
+          console.warn('Firebase email auth fallback to database:', fbErr?.code || fbErr?.message);
         }
-
-        setCurrentUser(
-          data.user
-        );
-
-        localStorage.setItem(
-          'yunay_active_uid',
-          data.user.uid
-        );
-
-        return {
-          success: true,
-          user: data.user,
-        };
       }
 
       /*
        * ------------------------------------------------
-       * LEGACY NON-EMAIL LOGIN
+       * DATABASE AUTHENTICATION (Mobile / Email / Admin)
        * ------------------------------------------------
        *
-       * Kept so existing phone/admin-style flows
-       * do not suddenly disappear.
-       *
-       * Firebase email login is now preferred.
+       * Supports Email, Phone, and Admin ID with Password.
        */
 
       const res = await fetch(
@@ -401,6 +402,8 @@ export const AuthProvider: React.FC<{
             identifier:
               cleanIdentifier,
             password,
+            intendedRole,
+            role: intendedRole,
           }),
         }
       );
@@ -443,6 +446,7 @@ export const AuthProvider: React.FC<{
         error:
           data?.error ||
           'Login failed',
+        accountRole: data?.accountRole,
       };
     } catch (error: any) {
       console.error(

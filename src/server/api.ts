@@ -1,4 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
+import crypto from 'node:crypto';
+import { adminAuth } from '../lib/firebase-admin.ts';
 import { db } from '../db/index.ts';
 import {
   users,
@@ -33,6 +35,24 @@ import {
 import QRCode from 'qrcode';
 
 export const apiRouter = Router();
+
+// Password hashing and verification
+export function hashPassword(password: string): string {
+  if (!password) return '';
+  const salt = crypto.randomBytes(16).toString('hex');
+  const hash = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
+  return `${salt}:${hash}`;
+}
+
+export function verifyPassword(password: string, storedHash: string): boolean {
+  if (!storedHash || !password) return false;
+  if (!storedHash.includes(':')) {
+    return password === storedHash;
+  }
+  const [salt, originalHash] = storedHash.split(':');
+  const hash = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
+  return hash === originalHash;
+}
 
 // Dynamic Super Admin ID resolver (never hardcoded to 1)
 async function getSuperAdminId(): Promise<number> {
@@ -189,7 +209,7 @@ apiRouter.post('/auth/demo-switch', async (req: Request, res: Response) => {
 // Direct Login (Mobile Number or Email for Customers & Shopkeepers, or ID "Yunu" with Password "1122" for Admin)
 apiRouter.post('/auth/login', async (req: Request, res: Response) => {
   try {
-    const { identifier, password = '', role = 'customer' } = req.body;
+    const { identifier, password = '', role = 'customer', intendedRole } = req.body;
     if (!identifier || !identifier.trim()) {
       return res.status(400).json({ error: 'Please enter your Mobile Number, Email, or Admin ID (Yunu)' });
     }
@@ -198,14 +218,15 @@ apiRouter.post('/auth/login', async (req: Request, res: Response) => {
     const cleanLower = cleanIdentifier.toLowerCase();
     const isEmail = cleanIdentifier.includes('@');
     const digitsOnly = cleanIdentifier.replace(/\D/g, '');
+    const targetRole = intendedRole || role;
 
     let user: any = null;
 
     // 1. ADMIN CHECK:
     // Admin does NOT need signup or email. Logs in directly with ID "Yunu" (or "admin") and Password "1122"
-    const isAdminIdentifier = cleanLower === 'yunu' || cleanLower === 'admin' || cleanLower === 'yunay admin';
+    const isAdminIdentifier = cleanLower === 'yunu' || cleanLower === 'admin' || cleanLower === 'yunay admin' || targetRole === 'super_admin' || targetRole === 'admin';
 
-    if (isAdminIdentifier) {
+    if (isAdminIdentifier && (cleanLower === 'yunu' || cleanLower === 'admin' || cleanLower === 'yunay admin' || cleanLower.includes('admin@'))) {
       if (password !== '1122') {
         return res.status(401).json({
           error: 'Incorrect Admin password. Please enter 1122.',
@@ -235,9 +256,9 @@ apiRouter.post('/auth/login', async (req: Request, res: Response) => {
       // 2. NORMAL USER LOOKUP (Customer or Shopkeeper)
       // All other users must sign up first before signing in!
       if (isEmail) {
-        const found = await db.select().from(users).where(ilike(users.email, cleanLower)).limit(1);
+        const found = await db.select().from(users).where(ilike(users.email, cleanLower));
         if (found.length > 0) {
-          user = found[0];
+          user = found.find((r) => r.role === targetRole) || found.find((r) => r.role !== 'super_admin') || found[0];
         }
       } else if (digitsOnly.length >= 7) {
         const last10 = digitsOnly.slice(-10);
@@ -246,16 +267,16 @@ apiRouter.post('/auth/login', async (req: Request, res: Response) => {
         );
         const rows = phoneMatch.rows as any[];
         if (rows.length > 0) {
-          user = rows.find((r) => r.role === role) || rows.find((r) => r.role !== 'super_admin') || rows[0];
+          user = rows.find((r) => r.role === targetRole) || rows.find((r) => r.role !== 'super_admin') || rows[0];
         }
       } else {
         const found = await db
           .select()
           .from(users)
           .where(or(ilike(users.email, `%${cleanLower}%`), ilike(users.phone, `%${cleanIdentifier}%`)))
-          .limit(1);
+          .limit(5);
         if (found.length > 0) {
-          user = found[0];
+          user = found.find((r) => r.role === targetRole) || found[0];
         }
       }
 
@@ -266,11 +287,43 @@ apiRouter.post('/auth/login', async (req: Request, res: Response) => {
         });
       }
 
-      // If account found happens to be super_admin, require 1122 password
-      if (user.role === 'super_admin' && password !== '1122') {
-        return res.status(401).json({
-          error: 'Super Admin access requires the master password (1122).',
+      // Role Mismatch Check: Ensure users only sign in through their designated portal
+      if (targetRole === 'shopkeeper' && user.role === 'customer') {
+        return res.status(403).json({
+          error: 'This account is registered as a Customer (ग्राहक). Please switch to "Customer Sign In" to access your account.',
+          accountRole: 'customer',
         });
+      }
+      if (targetRole === 'customer' && user.role === 'shopkeeper') {
+        return res.status(403).json({
+          error: 'This account is registered as a Shop Owner (दुकानदार). Please switch to "Shop Owner Sign In" to access your store.',
+          accountRole: 'shopkeeper',
+        });
+      }
+
+      // Password verification
+      if (user.role === 'super_admin') {
+        if (password !== '1122') {
+          return res.status(401).json({
+            error: 'Super Admin access requires the master password (1122).',
+          });
+        }
+      } else if (user.passwordHash) {
+        if (!password) {
+          return res.status(400).json({
+            error: 'Please enter your password to sign in.',
+          });
+        }
+        const isMatch = verifyPassword(password, user.passwordHash);
+        if (!isMatch) {
+          return res.status(401).json({
+            error: 'Incorrect password. Please enter the correct password.',
+          });
+        }
+      } else if (!user.passwordHash && password) {
+        // First-time setting password for legacy user
+        const newHash = hashPassword(password);
+        await db.update(users).set({ passwordHash: newHash }).where(eq(users.id, user.id));
       }
     }
 
@@ -342,13 +395,14 @@ apiRouter.post('/auth/login', async (req: Request, res: Response) => {
 // Register new customer
 apiRouter.post('/auth/register-customer', async (req: Request, res: Response) => {
   try {
-    const { name, phone, email } = req.body;
+    const { name, phone, email, password } = req.body;
     if (!name || (!phone && !email)) {
       return res.status(400).json({ error: 'Name and either Mobile or Email are required' });
     }
 
     const cleanEmail = email?.trim() || `${phone.replace(/\D/g, '')}@customer.yunay.in`;
     const cleanPhone = phone?.trim() || '';
+    const pwdHash = password ? hashPassword(password) : '';
 
     // Check if user already exists
     const existing = await db
@@ -359,6 +413,9 @@ apiRouter.post('/auth/register-customer', async (req: Request, res: Response) =>
 
     if (existing.length > 0) {
       const existingUser = existing[0];
+      if (pwdHash && !existingUser.passwordHash) {
+        await db.update(users).set({ passwordHash: pwdHash }).where(eq(users.id, existingUser.id));
+      }
       const sessionToken = signSessionToken({
         uid: existingUser.uid,
         dbId: existingUser.id,
@@ -379,9 +436,24 @@ apiRouter.post('/auth/register-customer', async (req: Request, res: Response) =>
         phone: cleanPhone,
         role: 'customer',
         status: 'active',
+        passwordHash: pwdHash,
         avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80',
       })
       .returning();
+
+    // Sync with Firebase Auth if valid email and password provided
+    if (password && cleanEmail.includes('@') && !cleanEmail.endsWith('@customer.yunay.in')) {
+      try {
+        await adminAuth.createUser({
+          uid,
+          email: cleanEmail,
+          password,
+          displayName: name,
+        });
+      } catch {
+        // Ignore if user already exists or Firebase Admin not configured
+      }
+    }
 
     const sessionToken = signSessionToken({
       uid: newUser.uid,
@@ -404,6 +476,7 @@ apiRouter.post('/auth/register-vendor', optionalAuth, async (req: AuthRequest, r
       ownerName,
       email,
       phone,
+      password,
       shopName,
       category,
       description,
@@ -431,6 +504,7 @@ apiRouter.post('/auth/register-vendor', optionalAuth, async (req: AuthRequest, r
 
     const cleanEmail = email.trim().toLowerCase();
     const cleanPhone = phone ? phone.trim() : (businessPhone ? businessPhone.trim() : '');
+    const pwdHash = password ? hashPassword(password) : '';
 
     // 1. Determine or create vendor user
     let vendorUser: any = null;
@@ -443,11 +517,15 @@ apiRouter.post('/auth/register-vendor', optionalAuth, async (req: AuthRequest, r
           name: ownerName || req.dbUser.name,
           phone: cleanPhone || req.dbUser.phone,
           email: cleanEmail || req.dbUser.email,
+          ...(pwdHash ? { passwordHash: pwdHash } : {}),
         })
         .where(eq(users.id, req.dbUser.id))
         .returning();
       vendorUser = updated;
     } else if (req.dbUser && req.dbUser.role === 'shopkeeper') {
+      if (pwdHash) {
+        await db.update(users).set({ passwordHash: pwdHash }).where(eq(users.id, req.dbUser.id));
+      }
       vendorUser = req.dbUser;
     } else {
       const existing = await db
@@ -468,6 +546,7 @@ apiRouter.post('/auth/register-vendor', optionalAuth, async (req: AuthRequest, r
             role: 'shopkeeper', // Strict: always shopkeeper
             name: ownerName || existing[0].name,
             phone: cleanPhone || existing[0].phone,
+            ...(pwdHash ? { passwordHash: pwdHash } : {}),
           })
           .where(eq(users.id, existing[0].id))
           .returning();
@@ -483,12 +562,27 @@ apiRouter.post('/auth/register-vendor', optionalAuth, async (req: AuthRequest, r
             phone: cleanPhone,
             role: 'shopkeeper', // Strict: shop owner must only be shopkeeper
             status: 'active',
+            passwordHash: pwdHash,
             avatarUrl:
               logoUrl ||
               'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80',
           })
           .returning();
         vendorUser = created;
+
+        // Sync with Firebase Auth if valid email and password provided
+        if (password && cleanEmail.includes('@')) {
+          try {
+            await adminAuth.createUser({
+              uid,
+              email: cleanEmail,
+              password,
+              displayName: ownerName,
+            });
+          } catch {
+            // Ignore if Firebase user exists or admin credentials not configured
+          }
+        }
       }
     }
 

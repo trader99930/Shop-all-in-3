@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Store, Check, ArrowRight, Upload, MapPin, Clock, Phone, Sparkles } from 'lucide-react';
+import { X, Store, Check, ArrowRight, Upload, MapPin, Clock, Phone, Sparkles, Lock, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.tsx';
 
 interface VendorOnboardingModalProps {
@@ -22,6 +22,10 @@ export const VendorOnboardingModal: React.FC<VendorOnboardingModalProps> = ({
   const [ownerName, setOwnerName] = useState(currentUser?.name || '');
   const [email, setEmail] = useState(currentUser?.email || '');
   const [phone, setPhone] = useState(currentUser?.phone || '+91 98111 22334');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [shopName, setShopName] = useState('');
   const [category, setCategory] = useState('Grocery');
   const [description, setDescription] = useState('');
@@ -75,6 +79,57 @@ export const VendorOnboardingModal: React.FC<VendorOnboardingModalProps> = ({
     'Other',
   ];
 
+  const handleNextStep = (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg('');
+
+    if (step === 1) {
+      if (!ownerName.trim()) {
+        setErrorMsg('Please enter your full name');
+        return;
+      }
+      if (!email.trim()) {
+        setErrorMsg('Please enter your email address');
+        return;
+      }
+      if (!phone.trim()) {
+        setErrorMsg('Please enter your mobile phone number');
+        return;
+      }
+      if (!shopName.trim()) {
+        setErrorMsg('Please enter your shop or business name');
+        return;
+      }
+      if (!password) {
+        setErrorMsg('Please create a password for your shop owner account');
+        return;
+      }
+      if (password.length < 4) {
+        setErrorMsg('Password should be at least 4 characters');
+        return;
+      }
+      if (password !== confirmPassword) {
+        setErrorMsg('Passwords do not match. Please verify both passwords.');
+        return;
+      }
+      setStep(2);
+      return;
+    }
+
+    if (step === 2) {
+      if (!address.trim()) {
+        setErrorMsg('Please enter your shop address');
+        return;
+      }
+      if (!city.trim()) {
+        setErrorMsg('Please enter your city');
+        return;
+      }
+      setStep(3);
+      return;
+    }
+  };
+
   const handleCompleteOnboarding = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!agreeTerms) {
@@ -90,6 +145,7 @@ export const VendorOnboardingModal: React.FC<VendorOnboardingModalProps> = ({
         ownerName,
         email,
         phone,
+        password,
         shopName,
         category,
         description,
@@ -177,7 +233,7 @@ export const VendorOnboardingModal: React.FC<VendorOnboardingModalProps> = ({
           </div>
         )}
 
-        <form onSubmit={step === 3 ? handleCompleteOnboarding : (e) => { e.preventDefault(); setStep(step + 1); }} className="mt-4 space-y-4 text-xs">
+        <form onSubmit={step === 3 ? handleCompleteOnboarding : handleNextStep} className="mt-4 space-y-4 text-xs">
           {/* STEP 1 */}
           {step === 1 && (
             <div className="space-y-3 animate-in fade-in">
@@ -214,6 +270,69 @@ export const VendorOnboardingModal: React.FC<VendorOnboardingModalProps> = ({
                     onChange={(e) => setPhone(e.target.value)}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white"
                   />
+                </div>
+              </div>
+
+              {/* Password & Confirm Password for Shop Owner Account */}
+              <div className="space-y-1 bg-emerald-50/50 p-3 rounded-2xl border border-emerald-100">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-black text-emerald-900 flex items-center gap-1.5">
+                    <Lock className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Create Shop Owner Password (दुकानदार पासवर्ड बनाएं)</span>
+                  </span>
+                  <span className="text-[10px] text-emerald-700 font-bold bg-emerald-100 px-1.5 py-0.5 rounded-full">
+                    Required for Sign In
+                  </span>
+                </div>
+                <p className="text-[10px] text-slate-500 pb-1">
+                  You will use this password along with your mobile/email to sign in to your merchant dashboard.
+                </p>
+
+                <div className="grid grid-cols-2 gap-2.5 pt-1">
+                  <div>
+                    <label className="font-bold text-slate-700 block mb-1 text-[11px]">Password (पासवर्ड) *</label>
+                    <div className="relative">
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        required
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="w-full pl-8 pr-8 py-2 bg-white border border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none font-medium text-xs"
+                      />
+                      <Lock className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 cursor-pointer"
+                        tabIndex={-1}
+                      >
+                        {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="font-bold text-slate-700 block mb-1 text-[11px]">Confirm Password (दोबारा डालें) *</label>
+                    <div className="relative">
+                      <input
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        required
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="w-full pl-8 pr-8 py-2 bg-white border border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none font-medium text-xs"
+                      />
+                      <Lock className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 cursor-pointer"
+                        tabIndex={-1}
+                      >
+                        {showConfirmPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
 
