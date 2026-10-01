@@ -1,4 +1,4 @@
-import { Router, Request, Response } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { db } from '../db/index.ts';
 import {
   users,
@@ -447,7 +447,7 @@ apiRouter.post('/auth/register-vendor', optionalAuth, async (req: AuthRequest, r
         .where(eq(users.id, req.dbUser.id))
         .returning();
       vendorUser = updated;
-    } else if (req.dbUser && req.dbUser.role === 'super_admin' && req.dbUser.email.toLowerCase() === cleanEmail) {
+    } else if (req.dbUser && req.dbUser.role === 'shopkeeper') {
       vendorUser = req.dbUser;
     } else {
       const existing = await db
@@ -461,11 +461,11 @@ apiRouter.post('/auth/register-vendor', optionalAuth, async (req: AuthRequest, r
         )
         .limit(1);
 
-      if (existing.length > 0) {
+      if (existing.length > 0 && existing[0].role !== 'super_admin') {
         const [updated] = await db
           .update(users)
           .set({
-            role: existing[0].role === 'super_admin' ? 'super_admin' : 'shopkeeper',
+            role: 'shopkeeper', // Strict: always shopkeeper
             name: ownerName || existing[0].name,
             phone: cleanPhone || existing[0].phone,
           })
@@ -481,7 +481,7 @@ apiRouter.post('/auth/register-vendor', optionalAuth, async (req: AuthRequest, r
             email: cleanEmail,
             name: ownerName,
             phone: cleanPhone,
-            role: 'shopkeeper',
+            role: 'shopkeeper', // Strict: shop owner must only be shopkeeper
             status: 'active',
             avatarUrl:
               logoUrl ||
@@ -2698,3 +2698,51 @@ apiRouter.put('/support/:id', requireAuth, async (req: AuthRequest, res: Respons
     res.status(500).json({ error: error.message });
   }
 });
+
+// ==========================================
+// STANDARDIZED API ERROR HANDLING MIDDLEWARE
+// ==========================================
+apiRouter.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  console.error('[API Error]:', err);
+
+  // PostgreSQL / Database errors
+  if (err.code && typeof err.code === 'string' && (err.code.startsWith('23') || err.code.startsWith('08') || err.code.startsWith('42'))) {
+    if (err.code === '23505') {
+      return res.status(409).json({
+        error: 'A record with this information already exists.',
+        code: 'DUPLICATE_ENTRY',
+      });
+    }
+    if (err.code === '23503') {
+      return res.status(400).json({
+        error: 'Cannot complete operation due to linked records (foreign key constraint).',
+        code: 'FOREIGN_KEY_VIOLATION',
+      });
+    }
+    return res.status(500).json({
+      error: 'A database error occurred. Please try again.',
+      code: 'DATABASE_ERROR',
+    });
+  }
+
+  // Authentication & Authorization errors
+  if (err.name === 'UnauthorizedError' || err.status === 401) {
+    return res.status(401).json({
+      error: err.message || 'Authentication required',
+      code: 'UNAUTHORIZED',
+    });
+  }
+  if (err.status === 403) {
+    return res.status(403).json({
+      error: err.message || 'Access denied',
+      code: 'FORBIDDEN',
+    });
+  }
+
+  const statusCode = err.status || err.statusCode || 500;
+  res.status(statusCode).json({
+    error: err.message || 'An unexpected error occurred',
+    code: err.code || 'INTERNAL_ERROR',
+  });
+});
+

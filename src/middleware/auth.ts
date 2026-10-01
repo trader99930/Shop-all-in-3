@@ -123,12 +123,17 @@ async function resolveAuthUser(req: Request): Promise<typeof users.$inferSelect 
     }
   }
 
-  // 3. Fallback: Lookup by x-yunay-uid header if provided
+  // 3. Fallback: Lookup by x-yunay-uid header for non-admin client/vendor sessions
+  // CRITICAL SECURITY: Never allow an unverified header to grant super_admin privileges!
   const yunayUid = req.headers['x-yunay-uid'] as string;
   if (yunayUid && typeof yunayUid === 'string' && yunayUid.trim()) {
     const cleanUid = yunayUid.trim();
     const found = await db.select().from(users).where(eq(users.uid, cleanUid)).limit(1);
     if (found.length > 0) {
+      if (found[0].role === 'super_admin') {
+        // Super admin MUST provide a valid signed session token, never raw header
+        return null;
+      }
       return found[0];
     }
   }
