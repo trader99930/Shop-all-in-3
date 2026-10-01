@@ -1,0 +1,6 @@
+{
+  "name": "YUNAY - Multi-Vendor Local Commerce Platform",
+  "description": "Scalable multi-tenant local commerce platform empowering local shops with digital storefronts, inventory, automatic billing, and order management.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
