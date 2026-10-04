@@ -11,6 +11,7 @@ export interface User {
   avatarUrl?: string;
   upiId?: string;
   shop?: Shop | null;
+  shops?: Shop[];
 }
 
 export interface Shop {

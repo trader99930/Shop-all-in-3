@@ -28,6 +28,8 @@ interface NavbarProps {
   onOpenVendorOnboarding: () => void;
   onOpenPolicies: (type: string) => void;
   onOpenLogin: (mode?: 'signin' | 'signup', role?: 'customer' | 'shopkeeper' | 'admin') => void;
+  onOpenCompanyProfile?: () => void;
+  vendorActiveTab?: string;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -38,6 +40,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   searchQuery,
   setSearchQuery,
   onOpenLogin,
+  onOpenCompanyProfile,
+  vendorActiveTab,
 }) => {
   const { currentUser, logout, getAuthHeaders } = useAuth();
   const { items, setIsCartOpen } = useCart();
@@ -200,11 +204,17 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             {/* 3. LOGGED IN: SHOP OWNER NAVIGATION */}
             {currentUser?.role === 'shopkeeper' && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2">
                 <button
-                  onClick={() => setCurrentTab('vendor')}
-                  className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
-                    currentTab === 'vendor'
+                  onClick={() => {
+                    if (onOpenCompanyProfile) {
+                      onOpenCompanyProfile();
+                    } else {
+                      setCurrentTab('vendor');
+                    }
+                  }}
+                  className={`flex items-center gap-1.5 px-2.5 sm:px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+                    currentTab === 'vendor' && vendorActiveTab === 'settings'
                       ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
                       : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200'
                   }`}
@@ -215,10 +225,10 @@ export const Navbar: React.FC<NavbarProps> = ({
 
                 <button
                   onClick={() => setCurrentTab('discovery')}
-                  className={`hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+                  className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
                     currentTab === 'discovery'
-                      ? 'bg-slate-900 text-white'
-                      : 'text-slate-700 hover:bg-slate-100'
+                      ? 'bg-slate-900 text-white shadow-xs'
+                      : 'text-slate-700 hover:bg-slate-100 border border-slate-200'
                   }`}
                 >
                   <Store className="w-3.5 h-3.5 text-emerald-600" />
@@ -378,16 +388,32 @@ export const Navbar: React.FC<NavbarProps> = ({
 
                       <div className="p-2 space-y-1">
                         {currentUser.role === 'shopkeeper' && (
-                          <button
-                            onClick={() => {
-                              setShowUserMenu(false);
-                              setCurrentTab('vendor');
-                            }}
-                            className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 rounded-xl flex items-center gap-2 transition"
-                          >
-                            <Building2 className="w-4 h-4 text-emerald-600" />
-                            <span>My Company Dashboard</span>
-                          </button>
+                          <>
+                            <button
+                              onClick={() => {
+                                setShowUserMenu(false);
+                                if (onOpenCompanyProfile) {
+                                  onOpenCompanyProfile();
+                                } else {
+                                  setCurrentTab('vendor');
+                                }
+                              }}
+                              className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 rounded-xl flex items-center gap-2 transition"
+                            >
+                              <Building2 className="w-4 h-4 text-emerald-600" />
+                              <span>🏢 My Company Profile (कंपनी प्रोफाइल)</span>
+                            </button>
+                            <button
+                              onClick={() => {
+                                setShowUserMenu(false);
+                                setCurrentTab('vendor');
+                              }}
+                              className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 rounded-xl flex items-center gap-2 transition"
+                            >
+                              <ShoppingCart className="w-4 h-4 text-emerald-600" />
+                              <span>📦 Orders & Products (डैशबोर्ड)</span>
+                            </button>
+                          </>
                         )}
 
                         {currentUser.role === 'customer' && (

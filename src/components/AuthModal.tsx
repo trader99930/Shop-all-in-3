@@ -197,18 +197,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in">
-      <div className="bg-white rounded-3xl max-w-md w-full p-5 sm:p-7 shadow-2xl border border-slate-200 relative text-slate-800 transition-all max-h-[92vh] overflow-y-auto">
+      <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-200 relative text-slate-800 transition-all max-h-[92vh] overflow-y-auto">
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition cursor-pointer"
+          className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition cursor-pointer"
           aria-label="Close dialog"
         >
           <X className="w-5 h-5" />
         </button>
 
         {/* Top Segment: Sign In / Sign Up Mode Switcher */}
-        <div className="flex items-center p-1 bg-slate-100 rounded-2xl mb-5 w-fit mx-auto border border-slate-200/80">
+        <div className="flex items-center p-1.5 bg-slate-100 rounded-2xl mb-6 w-fit mx-auto border border-slate-200 shadow-inner">
           <button
             type="button"
             onClick={() => {
@@ -217,13 +217,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               setErrorMsg('');
               setErrorAccountRole(null);
             }}
-            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs font-black transition cursor-pointer ${
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-black transition cursor-pointer ${
               mode === 'signin'
-                ? 'bg-white text-slate-900 shadow-xs'
+                ? 'bg-white text-slate-900 shadow-sm'
                 : 'text-slate-500 hover:text-slate-800'
             }`}
           >
-            <LogIn className="w-3.5 h-3.5 text-emerald-600" />
+            <LogIn className="w-4 h-4 text-emerald-600" />
             <span>Sign In (लॉगिन)</span>
           </button>
           <button
@@ -234,28 +234,28 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               setErrorMsg('');
               setErrorAccountRole(null);
             }}
-            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs font-black transition cursor-pointer ${
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-black transition cursor-pointer ${
               mode === 'signup'
-                ? 'bg-white text-slate-900 shadow-xs'
+                ? 'bg-white text-slate-900 shadow-sm'
                 : 'text-slate-500 hover:text-slate-800'
             }`}
           >
-            <UserPlus className="w-3.5 h-3.5 text-blue-600" />
+            <UserPlus className="w-4 h-4 text-blue-600" />
             <span>Sign Up (साइन अप)</span>
           </button>
         </div>
 
         {/* Feedback Notifications */}
         {errorMsg && (
-          <div className="mb-4 p-3.5 bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold rounded-2xl animate-shake space-y-2">
+          <div className="mb-5 p-4 bg-rose-50 border-2 border-rose-300 text-rose-900 text-sm font-bold rounded-2xl animate-shake space-y-2">
             <div>{errorMsg}</div>
             {errorAccountRole && (
               <button
                 type="button"
                 onClick={() => handleSwitchSigninRole(errorAccountRole)}
-                className="mt-1 flex items-center gap-1.5 px-3 py-1.5 bg-white border border-rose-300 text-rose-900 hover:bg-rose-100 rounded-xl text-xs font-bold transition shadow-xs cursor-pointer"
+                className="mt-1 flex items-center gap-2 px-3.5 py-2 bg-white border border-rose-300 text-rose-900 hover:bg-rose-100 rounded-xl text-xs font-black transition shadow-xs cursor-pointer"
               >
-                <RefreshCw className="w-3.5 h-3.5 text-rose-600" />
+                <RefreshCw className="w-4 h-4 text-rose-600" />
                 <span>
                   {errorAccountRole === 'customer'
                     ? '👉 Switch to Customer Sign In (ग्राहक लॉगिन)'
@@ -267,8 +267,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         )}
 
         {successMsg && (
-          <div className="mb-4 p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold rounded-2xl flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+          <div className="mb-5 p-4 bg-emerald-50 border-2 border-emerald-300 text-emerald-900 text-sm font-bold rounded-2xl flex items-center gap-2.5">
+            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
             <span>{successMsg}</span>
           </div>
         )}
@@ -277,42 +277,42 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         {/* VIEW 1: SIGN IN - STEP 1 (ROLE SELECTION) */}
         {/* ========================================================================= */}
         {mode === 'signin' && signinStep === 'choose' && (
-          <div className="space-y-4">
-            <div className="text-center space-y-1">
-              <div className="w-12 h-12 bg-gradient-to-tr from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center text-white mx-auto shadow-md shadow-emerald-500/20">
-                <Store className="w-6 h-6" />
+          <div className="space-y-5">
+            <div className="text-center space-y-1.5">
+              <div className="w-14 h-14 bg-gradient-to-tr from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center text-white mx-auto shadow-md shadow-emerald-500/20">
+                <Store className="w-7 h-7" />
               </div>
-              <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight pt-1">
+              <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight pt-1">
                 Sign In to YUNAY
               </h2>
-              <p className="text-xs text-slate-500 max-w-xs mx-auto">
+              <p className="text-sm font-bold text-slate-600 max-w-sm mx-auto">
                 Choose your account type to sign in (अपना खाता प्रकार चुनें)
               </p>
             </div>
 
-            <div className="space-y-3 pt-2">
+            <div className="space-y-3.5 pt-1">
               {/* Option 1: Shop Owner */}
               <div
                 onClick={() => handleSwitchSigninRole('shopkeeper')}
-                className="group p-4 rounded-2xl border-2 border-emerald-200 hover:border-emerald-500 bg-emerald-50/40 hover:bg-emerald-50 transition cursor-pointer relative"
+                className="group p-4.5 rounded-2xl border-2 border-emerald-200 hover:border-emerald-500 bg-emerald-50/40 hover:bg-emerald-50 transition cursor-pointer relative shadow-2xs"
               >
-                <div className="flex items-start gap-3.5">
-                  <div className="w-11 h-11 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-emerald-600/20 group-hover:scale-105 transition">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-emerald-600/20 group-hover:scale-105 transition">
                     <Store className="w-6 h-6" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-bold text-slate-900">Shop Owner</h3>
-                      <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase">
+                      <h3 className="text-base font-black text-slate-900">Shop Owner</h3>
+                      <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-black uppercase">
                         दुकानदार
                       </span>
                     </div>
-                    <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                    <p className="text-sm font-semibold text-slate-600 mt-1 leading-relaxed">
                       Sign in to manage your shop, view customer orders, update catalog, and track sales.
                     </p>
-                    <div className="mt-2.5 flex items-center gap-1 text-xs font-bold text-emerald-700 group-hover:translate-x-0.5 transition">
+                    <div className="mt-3 flex items-center gap-1.5 text-sm font-black text-emerald-700 group-hover:translate-x-1 transition">
                       <span>Sign In as Shop Owner (दुकानदार लॉगिन)</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
+                      <ArrowRight className="w-4 h-4" />
                     </div>
                   </div>
                 </div>
@@ -321,25 +321,25 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               {/* Option 2: Customer */}
               <div
                 onClick={() => handleSwitchSigninRole('customer')}
-                className="group p-4 rounded-2xl border-2 border-blue-200 hover:border-blue-500 bg-blue-50/40 hover:bg-blue-50 transition cursor-pointer relative"
+                className="group p-4.5 rounded-2xl border-2 border-blue-200 hover:border-blue-500 bg-blue-50/40 hover:bg-blue-50 transition cursor-pointer relative shadow-2xs"
               >
-                <div className="flex items-start gap-3.5">
-                  <div className="w-11 h-11 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-blue-600/20 group-hover:scale-105 transition">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-blue-600/20 group-hover:scale-105 transition">
                     <ShoppingBag className="w-6 h-6" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-bold text-slate-900">Customer</h3>
-                      <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[10px] font-black uppercase">
+                      <h3 className="text-base font-black text-slate-900">Customer</h3>
+                      <span className="px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 text-xs font-black uppercase">
                         ग्राहक
                       </span>
                     </div>
-                    <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                    <p className="text-sm font-semibold text-slate-600 mt-1 leading-relaxed">
                       Sign in to browse local stores, track pending deliveries, and manage your cart.
                     </p>
-                    <div className="mt-2.5 flex items-center gap-1 text-xs font-bold text-blue-700 group-hover:translate-x-0.5 transition">
+                    <div className="mt-3 flex items-center gap-1.5 text-sm font-black text-blue-700 group-hover:translate-x-1 transition">
                       <span>Sign In as Customer (ग्राहक लॉगिन)</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
+                      <ArrowRight className="w-4 h-4" />
                     </div>
                   </div>
                 </div>
@@ -348,23 +348,23 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               {/* Option 3: Admin Portal */}
               <div
                 onClick={() => handleSwitchSigninRole('admin')}
-                className="p-3 rounded-2xl border border-purple-200 hover:border-purple-400 bg-purple-50/40 hover:bg-purple-50 transition cursor-pointer flex items-center justify-between"
+                className="p-4 rounded-2xl border-2 border-purple-200 hover:border-purple-400 bg-purple-50/40 hover:bg-purple-50 transition cursor-pointer flex items-center justify-between shadow-2xs"
               >
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-purple-600 text-white flex items-center justify-center shrink-0 shadow-xs">
-                    <ShieldCheck className="w-4 h-4" />
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                    <ShieldCheck className="w-5 h-5" />
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-slate-900">Platform Administrator</h4>
-                    <p className="text-[10px] text-slate-500">Master console for authorized administrators</p>
+                    <h4 className="text-sm font-black text-slate-900">Platform Administrator</h4>
+                    <p className="text-xs font-bold text-slate-500">Master console for authorized administrators</p>
                   </div>
                 </div>
-                <ArrowRight className="w-4 h-4 text-purple-600" />
+                <ArrowRight className="w-5 h-5 text-purple-600" />
               </div>
             </div>
 
-            <div className="text-center pt-2 border-t border-slate-100">
-              <p className="text-xs text-slate-500">
+            <div className="text-center pt-3 border-t border-slate-100">
+              <p className="text-sm font-bold text-slate-600">
                 New user?{' '}
                 <button
                   type="button"
@@ -373,7 +373,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     setMode('signup');
                     setSignupStep('choose');
                   }}
-                  className="font-bold text-emerald-600 hover:text-emerald-700 underline transition cursor-pointer"
+                  className="font-black text-emerald-600 hover:text-emerald-700 underline transition cursor-pointer text-sm"
                 >
                   Create an Account (साइन अप करें)
                 </button>
@@ -388,7 +388,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         {mode === 'signin' && signinStep !== 'choose' && (
           <div className="space-y-4">
             {/* Header with Back button and Role Tabs */}
-            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-3">
+            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-3.5">
               <button
                 type="button"
                 onClick={() => {
@@ -396,63 +396,63 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   setErrorMsg('');
                   setErrorAccountRole(null);
                 }}
-                className="flex items-center gap-1 text-xs font-bold text-slate-500 hover:text-slate-800 transition cursor-pointer p-1"
+                className="flex items-center gap-1.5 text-sm font-black text-slate-600 hover:text-slate-900 transition cursor-pointer p-1"
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span>Change Type</span>
               </button>
 
               {/* Fast Role Switcher Pills */}
-              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl text-[11px] font-bold">
+              <div className="flex items-center gap-1 bg-slate-100 p-1.5 rounded-xl text-xs font-black border border-slate-200/80">
                 <button
                   type="button"
                   onClick={() => handleSwitchSigninRole('shopkeeper')}
-                  className={`px-2.5 py-1 rounded-lg transition cursor-pointer flex items-center gap-1 ${
+                  className={`px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5 ${
                     signinStep === 'shopkeeper'
                       ? 'bg-emerald-600 text-white shadow-xs'
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  <Store className="w-3 h-3" />
+                  <Store className="w-3.5 h-3.5" />
                   <span>Shop Owner</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => handleSwitchSigninRole('customer')}
-                  className={`px-2.5 py-1 rounded-lg transition cursor-pointer flex items-center gap-1 ${
+                  className={`px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5 ${
                     signinStep === 'customer'
                       ? 'bg-blue-600 text-white shadow-xs'
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  <ShoppingBag className="w-3 h-3" />
+                  <ShoppingBag className="w-3.5 h-3.5" />
                   <span>Customer</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => handleSwitchSigninRole('admin')}
-                  className={`px-2 py-1 rounded-lg transition cursor-pointer flex items-center gap-1 ${
+                  className={`px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5 ${
                     signinStep === 'admin'
                       ? 'bg-purple-600 text-white shadow-xs'
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  <ShieldCheck className="w-3 h-3" />
+                  <ShieldCheck className="w-3.5 h-3.5" />
                   <span>Admin</span>
                 </button>
               </div>
             </div>
 
             {/* Portal Title & Subtitle */}
-            <div className="text-left space-y-0.5">
-              <div className="flex items-center gap-2">
-                <h3 className="text-xl font-black text-slate-900 tracking-tight">
+            <div className="text-left space-y-1">
+              <div className="flex items-center gap-2.5">
+                <h3 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
                   {signinStep === 'shopkeeper' && 'Shop Owner Sign In'}
                   {signinStep === 'customer' && 'Customer Sign In'}
                   {signinStep === 'admin' && 'Platform Admin Sign In'}
                 </h3>
                 <span
-                  className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${
+                  className={`text-xs font-black uppercase px-2.5 py-0.5 rounded-full ${
                     signinStep === 'shopkeeper'
                       ? 'bg-emerald-100 text-emerald-800'
                       : signinStep === 'customer'
@@ -465,7 +465,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   {signinStep === 'admin' && 'एडमिन'}
                 </span>
               </div>
-              <p className="text-xs text-slate-500">
+              <p className="text-sm font-bold text-slate-600">
                 {signinStep === 'shopkeeper' &&
                   'Enter your registered merchant mobile or email to access your shop.'}
                 {signinStep === 'customer' &&
@@ -476,9 +476,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             </div>
 
             {/* Form */}
-            <form onSubmit={handleSignIn} className="space-y-3.5 pt-1">
+            <form onSubmit={handleSignIn} className="space-y-4 pt-1.5">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-sm font-black text-slate-800 mb-1.5">
                   {signinStep === 'admin'
                     ? 'Admin ID'
                     : signinStep === 'shopkeeper'
@@ -498,21 +498,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     }
                     value={identifier}
                     onChange={(e) => setIdentifier(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2.5 bg-slate-50 focus:bg-white rounded-xl text-sm border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition font-medium"
+                    className="w-full pl-11 pr-4 py-3 bg-slate-50 focus:bg-white rounded-2xl text-base font-bold text-slate-900 border-2 border-slate-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/15 outline-none transition placeholder:text-slate-400 placeholder:font-bold shadow-2xs"
                   />
                   {signinStep === 'shopkeeper' ? (
-                    <Store className="w-4 h-4 text-emerald-600 absolute left-3 top-3" />
+                    <Store className="w-5 h-5 text-emerald-600 absolute left-3.5 top-3.5" />
                   ) : signinStep === 'admin' ? (
-                    <ShieldCheck className="w-4 h-4 text-purple-600 absolute left-3 top-3" />
+                    <ShieldCheck className="w-5 h-5 text-purple-600 absolute left-3.5 top-3.5" />
                   ) : (
-                    <UserIcon className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                    <UserIcon className="w-5 h-5 text-slate-500 absolute left-3.5 top-3.5" />
                   )}
                 </div>
               </div>
 
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-xs font-bold text-slate-700">
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-sm font-black text-slate-800">
                     Password (पासवर्ड) *
                   </label>
                 </div>
@@ -523,16 +523,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     placeholder={signinStep === 'admin' ? 'Enter password' : 'Enter your password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-9 pr-10 py-2.5 bg-slate-50 focus:bg-white rounded-xl text-sm border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition"
+                    className="w-full pl-11 pr-11 py-3 bg-slate-50 focus:bg-white rounded-2xl text-base font-bold text-slate-900 border-2 border-slate-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/15 outline-none transition placeholder:text-slate-400 placeholder:font-bold shadow-2xs"
                   />
-                  <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                  <Lock className="w-5 h-5 text-slate-500 absolute left-3.5 top-3.5" />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 cursor-pointer"
+                    className="absolute right-3.5 top-3.5 text-slate-400 hover:text-slate-700 cursor-pointer"
                     tabIndex={-1}
                   >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
               </div>
@@ -540,16 +540,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <button
                 type="submit"
                 disabled={submitting}
-                className={`w-full py-2.5 px-4 text-white rounded-xl font-bold text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 mt-1 ${
+                className={`w-full py-3.5 px-5 text-white rounded-2xl font-black text-base shadow-lg transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 mt-2 ${
                   signinStep === 'shopkeeper'
-                    ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20'
+                    ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/30'
                     : signinStep === 'customer'
-                    ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/20'
-                    : 'bg-purple-600 hover:bg-purple-700 shadow-purple-600/20'
+                    ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/30'
+                    : 'bg-purple-600 hover:bg-purple-700 shadow-purple-600/30'
                 }`}
               >
                 {submitting ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <div className="w-5 h-5 border-3 border-white border-t-transparent rounded-full animate-spin" />
                 ) : (
                   <>
                     <span>
@@ -557,7 +557,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       {signinStep === 'customer' && 'Sign In as Customer (ग्राहक लॉगिन)'}
                       {signinStep === 'admin' && 'Sign In as Administrator'}
                     </span>
-                    <ArrowRight className="w-4 h-4" />
+                    <ArrowRight className="w-5 h-5" />
                   </>
                 )}
               </button>
@@ -566,9 +566,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             {/* Google Sign-In (Available for Customer) */}
             {signinStep === 'customer' && (
               <>
-                <div className="relative flex py-1 items-center">
+                <div className="relative flex py-1.5 items-center">
                   <div className="flex-grow border-t border-slate-200"></div>
-                  <span className="flex-shrink mx-3 text-slate-400 text-xs font-semibold">OR</span>
+                  <span className="flex-shrink mx-3 text-slate-400 text-xs font-bold uppercase tracking-wider">OR</span>
                   <div className="flex-grow border-t border-slate-200"></div>
                 </div>
 
@@ -585,12 +585,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       setErrorMsg('Google Sign-In cancelled or unavailable.');
                     }
                   }}
-                  className="w-full py-2.5 px-4 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl font-semibold text-xs transition flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full py-3 px-4 bg-white hover:bg-slate-50 text-slate-800 border-2 border-slate-200 rounded-2xl font-black text-sm transition flex items-center justify-center gap-2.5 cursor-pointer shadow-2xs"
                 >
                   <img
                     src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
                     alt="Google"
-                    className="w-4 h-4"
+                    className="w-5 h-5"
                   />
                   <span>Continue with Google</span>
                 </button>
@@ -598,9 +598,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             )}
 
             {/* Footer Registration Action */}
-            <div className="text-center pt-2 border-t border-slate-100">
+            <div className="text-center pt-3 border-t border-slate-100">
               {signinStep === 'shopkeeper' ? (
-                <p className="text-xs text-slate-500">
+                <p className="text-sm font-bold text-slate-600">
                   Don't have a shop account yet?{' '}
                   <button
                     type="button"
@@ -608,13 +608,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       onClose();
                       onOpenVendorOnboarding();
                     }}
-                    className="font-bold text-emerald-600 hover:text-emerald-700 underline transition cursor-pointer"
+                    className="font-black text-emerald-600 hover:text-emerald-700 underline transition cursor-pointer text-sm"
                   >
                     Register Your Shop (नया दुकानदार साइन अप)
                   </button>
                 </p>
               ) : signinStep === 'customer' ? (
-                <p className="text-xs text-slate-500">
+                <p className="text-sm font-bold text-slate-600">
                   New customer?{' '}
                   <button
                     type="button"
@@ -623,13 +623,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       setMode('signup');
                       setSignupStep('customer');
                     }}
-                    className="font-bold text-blue-600 hover:text-blue-700 underline transition cursor-pointer"
+                    className="font-black text-blue-600 hover:text-blue-700 underline transition cursor-pointer text-sm"
                   >
                     Create Customer Account (साइन अप करें)
                   </button>
                 </p>
               ) : (
-                <p className="text-xs text-slate-400">
+                <p className="text-sm font-bold text-slate-400">
                   Platform administration console
                 </p>
               )}
@@ -642,44 +642,44 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         {/* ========================================================================= */}
         {mode === 'signup' && signupStep === 'choose' && (
           <div className="space-y-5">
-            <div className="text-center space-y-1">
-              <div className="w-12 h-12 bg-gradient-to-tr from-emerald-500 to-blue-600 rounded-2xl flex items-center justify-center text-white mx-auto shadow-md shadow-emerald-500/20">
-                <Sparkles className="w-6 h-6" />
+            <div className="text-center space-y-1.5">
+              <div className="w-14 h-14 bg-gradient-to-tr from-emerald-500 to-blue-600 rounded-2xl flex items-center justify-center text-white mx-auto shadow-md shadow-emerald-500/20">
+                <Sparkles className="w-7 h-7" />
               </div>
-              <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight pt-1">
+              <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight pt-1">
                 Create your YUNAY account
               </h2>
-              <p className="text-xs text-slate-500">
+              <p className="text-sm font-bold text-slate-600">
                 Select how you would like to use YUNAY to continue (अपना खाता चुनें)
               </p>
             </div>
 
-            <div className="space-y-3 pt-2">
+            <div className="space-y-3.5 pt-1">
               {/* Option 1: Shop Owner */}
               <div
                 onClick={() => {
                   onClose();
                   onOpenVendorOnboarding();
                 }}
-                className="group p-4 rounded-2xl border-2 border-emerald-200 hover:border-emerald-500 bg-emerald-50/40 hover:bg-emerald-50 transition cursor-pointer relative"
+                className="group p-4.5 rounded-2xl border-2 border-emerald-200 hover:border-emerald-500 bg-emerald-50/40 hover:bg-emerald-50 transition cursor-pointer relative shadow-2xs"
               >
-                <div className="flex items-start gap-3.5">
-                  <div className="w-11 h-11 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-emerald-600/20 group-hover:scale-105 transition">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-emerald-600/20 group-hover:scale-105 transition">
                     <Store className="w-6 h-6" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-bold text-slate-900">Shop Owner</h3>
-                      <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase">
+                      <h3 className="text-base font-black text-slate-900">Shop Owner</h3>
+                      <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-black uppercase">
                         दुकानदार • Sell Local
                       </span>
                     </div>
-                    <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                    <p className="text-sm font-semibold text-slate-600 mt-1 leading-relaxed">
                       Create your digital storefront, set password, upload products, and accept local customer orders.
                     </p>
-                    <div className="mt-2.5 flex items-center gap-1 text-xs font-bold text-emerald-700 group-hover:translate-x-0.5 transition">
+                    <div className="mt-3 flex items-center gap-1.5 text-sm font-black text-emerald-700 group-hover:translate-x-1 transition">
                       <span>Sign Up as Shop Owner (दुकानदार खाता बनाएं)</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
+                      <ArrowRight className="w-4 h-4" />
                     </div>
                   </div>
                 </div>
@@ -691,25 +691,25 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   setErrorMsg('');
                   setSignupStep('customer');
                 }}
-                className="group p-4 rounded-2xl border-2 border-blue-200 hover:border-blue-500 bg-blue-50/40 hover:bg-blue-50 transition cursor-pointer relative"
+                className="group p-4.5 rounded-2xl border-2 border-blue-200 hover:border-blue-500 bg-blue-50/40 hover:bg-blue-50 transition cursor-pointer relative shadow-2xs"
               >
-                <div className="flex items-start gap-3.5">
-                  <div className="w-11 h-11 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-blue-600/20 group-hover:scale-105 transition">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-blue-600/20 group-hover:scale-105 transition">
                     <ShoppingBag className="w-6 h-6" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-bold text-slate-900">Customer</h3>
-                      <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[10px] font-black uppercase">
+                      <h3 className="text-base font-black text-slate-900">Customer</h3>
+                      <span className="px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 text-xs font-black uppercase">
                         ग्राहक • Shop & Order
                       </span>
                     </div>
-                    <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                    <p className="text-sm font-semibold text-slate-600 mt-1 leading-relaxed">
                       Shop from neighborhood stores, discover local products, and order for direct delivery or pickup.
                     </p>
-                    <div className="mt-2.5 flex items-center gap-1 text-xs font-bold text-blue-700 group-hover:translate-x-0.5 transition">
+                    <div className="mt-3 flex items-center gap-1.5 text-sm font-black text-blue-700 group-hover:translate-x-1 transition">
                       <span>Sign Up as Customer (ग्राहक खाता बनाएं)</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
+                      <ArrowRight className="w-4 h-4" />
                     </div>
                   </div>
                 </div>
@@ -717,7 +717,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             </div>
 
             <div className="text-center pt-3 border-t border-slate-100">
-              <p className="text-xs text-slate-500">
+              <p className="text-sm font-bold text-slate-600">
                 Already have an account?{' '}
                 <button
                   type="button"
@@ -726,7 +726,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     setMode('signin');
                     setSigninStep('choose');
                   }}
-                  className="font-bold text-emerald-600 hover:text-emerald-700 underline transition cursor-pointer"
+                  className="font-black text-emerald-600 hover:text-emerald-700 underline transition cursor-pointer text-sm"
                 >
                   Sign In (लॉगिन करें)
                 </button>
@@ -740,27 +740,27 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         {/* ========================================================================= */}
         {mode === 'signup' && signupStep === 'customer' && (
           <div className="space-y-4">
-            <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+            <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3.5">
               <button
                 type="button"
                 onClick={() => setSignupStep('choose')}
-                className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition cursor-pointer"
+                className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition cursor-pointer"
               >
-                <ArrowLeft className="w-4 h-4" />
+                <ArrowLeft className="w-5 h-5" />
               </button>
               <div>
-                <h2 className="text-lg font-black text-slate-900 tracking-tight">
+                <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
                   Customer Registration (ग्राहक खाता)
                 </h2>
-                <p className="text-[11px] text-slate-500">
+                <p className="text-xs font-bold text-slate-500">
                   Shop from verified neighborhood stores
                 </p>
               </div>
             </div>
 
-            <form onSubmit={handleCustomerSignUp} className="space-y-3 pt-1">
+            <form onSubmit={handleCustomerSignUp} className="space-y-3.5 pt-1">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-sm font-black text-slate-800 mb-1.5">
                   Full Name (पूरा नाम) *
                 </label>
                 <div className="relative">
@@ -770,14 +770,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     placeholder="e.g. Rahul Sharma"
                     value={regName}
                     onChange={(e) => setRegName(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2 bg-slate-50 focus:bg-white rounded-xl text-sm border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition font-medium"
+                    className="w-full pl-11 pr-4 py-3 bg-slate-50 focus:bg-white rounded-2xl text-base font-bold text-slate-900 border-2 border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 outline-none transition placeholder:text-slate-400 placeholder:font-bold shadow-2xs"
                   />
-                  <UserIcon className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                  <UserIcon className="w-5 h-5 text-slate-500 absolute left-3.5 top-3.5" />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-sm font-black text-slate-800 mb-1.5">
                   Mobile Number (मोबाइल नंबर) *
                 </label>
                 <div className="relative">
@@ -787,15 +787,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     placeholder="e.g. 98765 43210"
                     value={regPhone}
                     onChange={(e) => setRegPhone(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2 bg-slate-50 focus:bg-white rounded-xl text-sm border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition"
+                    className="w-full pl-11 pr-4 py-3 bg-slate-50 focus:bg-white rounded-2xl text-base font-bold text-slate-900 border-2 border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 outline-none transition placeholder:text-slate-400 placeholder:font-bold shadow-2xs"
                   />
-                  <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                  <Phone className="w-5 h-5 text-slate-500 absolute left-3.5 top-3.5" />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Email Address <span className="text-slate-400 font-normal">(optional)</span>
+                <label className="block text-sm font-black text-slate-800 mb-1.5">
+                  Email Address <span className="text-slate-400 font-semibold">(optional)</span>
                 </label>
                 <div className="relative">
                   <input
@@ -803,15 +803,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     placeholder="e.g. rahul@example.com"
                     value={regEmail}
                     onChange={(e) => setRegEmail(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2 bg-slate-50 focus:bg-white rounded-xl text-sm border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition"
+                    className="w-full pl-11 pr-4 py-3 bg-slate-50 focus:bg-white rounded-2xl text-base font-bold text-slate-900 border-2 border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 outline-none transition placeholder:text-slate-400 placeholder:font-bold shadow-2xs"
                   />
-                  <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                  <Mail className="w-5 h-5 text-slate-500 absolute left-3.5 top-3.5" />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-sm font-black text-slate-800 mb-1.5">
                     Password *
                   </label>
                   <div className="relative">
@@ -821,23 +821,23 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       placeholder="••••••••"
                       value={regPassword}
                       onChange={(e) => setRegPassword(e.target.value)}
-                      className="w-full pl-8 pr-7 py-2 bg-slate-50 focus:bg-white rounded-xl text-xs border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition"
+                      className="w-full pl-10 pr-9 py-2.5 bg-slate-50 focus:bg-white rounded-2xl text-base font-bold text-slate-900 border-2 border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 outline-none transition placeholder:text-slate-400 placeholder:font-bold shadow-2xs"
                     />
-                    <Lock className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
+                    <Lock className="w-4 h-4 text-slate-500 absolute left-3 top-3.5" />
                     <button
                       type="button"
                       onClick={() => setShowRegPassword(!showRegPassword)}
-                      className="absolute right-2 top-2.5 text-slate-400 hover:text-slate-600 cursor-pointer"
+                      className="absolute right-3 top-3.5 text-slate-400 hover:text-slate-700 cursor-pointer"
                       tabIndex={-1}
                     >
-                      {showRegPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      {showRegPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Confirm *
+                  <label className="block text-sm font-black text-slate-800 mb-1.5">
+                    Confirm Password *
                   </label>
                   <div className="relative">
                     <input
@@ -846,16 +846,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       placeholder="••••••••"
                       value={regConfirmPassword}
                       onChange={(e) => setRegConfirmPassword(e.target.value)}
-                      className="w-full pl-8 pr-7 py-2 bg-slate-50 focus:bg-white rounded-xl text-xs border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition"
+                      className="w-full pl-10 pr-9 py-2.5 bg-slate-50 focus:bg-white rounded-2xl text-base font-bold text-slate-900 border-2 border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 outline-none transition placeholder:text-slate-400 placeholder:font-bold shadow-2xs"
                     />
-                    <Lock className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
+                    <Lock className="w-4 h-4 text-slate-500 absolute left-3 top-3.5" />
                     <button
                       type="button"
                       onClick={() => setShowRegConfirmPassword(!showRegConfirmPassword)}
-                      className="absolute right-2 top-2.5 text-slate-400 hover:text-slate-600 cursor-pointer"
+                      className="absolute right-3 top-3.5 text-slate-400 hover:text-slate-700 cursor-pointer"
                       tabIndex={-1}
                     >
-                      {showRegConfirmPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      {showRegConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
                 </div>
@@ -864,21 +864,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-md shadow-blue-600/20 transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 mt-2"
+                className="w-full py-3.5 px-5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black text-base shadow-lg shadow-blue-600/30 transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 mt-3"
               >
                 {submitting ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <div className="w-5 h-5 border-3 border-white border-t-transparent rounded-full animate-spin" />
                 ) : (
                   <>
                     <span>Create Customer Account (खाता बनाएं)</span>
-                    <ArrowRight className="w-4 h-4" />
+                    <ArrowRight className="w-5 h-5" />
                   </>
                 )}
               </button>
             </form>
 
-            <div className="text-center pt-2 border-t border-slate-100">
-              <p className="text-xs text-slate-500">
+            <div className="text-center pt-3 border-t border-slate-100">
+              <p className="text-sm font-bold text-slate-600">
                 Already have an account?{' '}
                 <button
                   type="button"
@@ -887,7 +887,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     setMode('signin');
                     setSigninStep('customer');
                   }}
-                  className="font-bold text-blue-600 hover:text-blue-700 underline transition cursor-pointer"
+                  className="font-black text-blue-600 hover:text-blue-700 underline transition cursor-pointer text-sm"
                 >
                   Sign In (ग्राहक लॉगिन)
                 </button>

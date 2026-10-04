@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Store,
   Package,
@@ -29,25 +29,83 @@ import {
   Percent,
   CreditCard,
   Check,
+  Camera,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { Shop, Product, ProductVariant, Order, Offer, Invoice } from '../types/index.ts';
 import { useAuth } from '../context/AuthContext.tsx';
 import { InvoiceModal } from '../components/InvoiceModal.tsx';
 import { QRCodeModal } from '../components/QRCodeModal.tsx';
+import { ImageUploadPicker } from '../components/ImageUploadPicker.tsx';
+
+// Helper to auto-compress and resize client-side photos from camera/gallery
+const compressImageFile = (
+  file: File,
+  maxWidth = 800,
+  maxHeight = 800,
+  quality = 0.8
+): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(e.target?.result as string);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+        resolve(dataUrl);
+      };
+      img.onerror = () => reject(new Error('Failed to load image file'));
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = () => reject(new Error('Failed to read image file'));
+    reader.readAsDataURL(file);
+  });
+};
 
 interface VendorDashboardProps {
   onViewPublicStore: (slug: string) => void;
   onOpenVendorOnboarding?: () => void;
   initialShopSlug?: string;
+  initialTab?: 'orders' | 'products' | 'stock' | 'customers' | 'offers' | 'settings';
 }
 
 export const VendorDashboard: React.FC<VendorDashboardProps> = ({
   onViewPublicStore,
   onOpenVendorOnboarding,
   initialShopSlug,
+  initialTab,
 }) => {
-  const { currentUser, getAuthHeaders, refreshSession, switchUser } = useAuth();
-  const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'stock' | 'customers' | 'offers' | 'settings'>('orders');
+  const { currentUser, getAuthHeaders, refreshSession } = useAuth();
+  const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'stock' | 'customers' | 'offers' | 'settings'>(initialTab || 'orders');
+
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
   const [shop, setShop] = useState<Shop | null>(currentUser?.shop || null);
   const [availableShops, setAvailableShops] = useState<Shop[]>([]);
   const [loading, setLoading] = useState(true);
@@ -117,6 +175,8 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
   const [settingMinOrder, setSettingMinOrder] = useState('100');
   const [settingFreeThreshold, setSettingFreeThreshold] = useState('500');
   const [settingAnnouncement, setSettingAnnouncement] = useState('');
+  const [settingLogoUrl, setSettingLogoUrl] = useState('');
+  const [settingBannerUrl, setSettingBannerUrl] = useState('');
   const [settingUpiId, setSettingUpiId] = useState('');
   const [settingTempClosed, setSettingTempClosed] = useState(false);
   const [settingsSaved, setSettingsSaved] = useState(false);
@@ -133,8 +193,8 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
       const meRes = await fetch('/api/auth/me', { headers: getAuthHeaders() });
       const meData = await meRes.json();
 
-      // 2. Fetch all shops to enable full platform control and accurate multi-store access
-      const allRes = await fetch('/api/shops');
+      // 2. Fetch shops with auth headers so shopkeeper only receives their own stores
+      const allRes = await fetch('/api/shops', { headers: getAuthHeaders() });
       let allShops: Shop[] = [];
       if (allRes.ok) {
         allShops = await allRes.json();
@@ -149,33 +209,41 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
         // Super admin can manage ALL stores on the platform
         shopList = allShops;
       } else if (myId) {
-        // Shopkeeper gets all shops owned by them
+        // Shopkeeper gets ONLY shops owned by their account
         shopList = allShops.filter((s) => Number(s.ownerId) === Number(myId));
       }
 
-      // Fallback to meData shops if available
+      // Fallback to meData shops if available, strictly filtered
       if (shopList.length === 0 && meData.user?.shops?.length > 0) {
-        shopList = meData.user.shops;
+        shopList = isSuperAdmin
+          ? meData.user.shops
+          : meData.user.shops.filter((s: Shop) => Number(s.ownerId) === Number(myId));
       }
       if (shopList.length === 0 && meData.user?.shop) {
-        shopList = [meData.user.shop];
+        if (isSuperAdmin || Number(meData.user.shop.ownerId) === Number(myId)) {
+          shopList = [meData.user.shop];
+        }
+      }
+
+      // STRICT MULTI-TENANT ISOLATION: A non-admin shopkeeper can NEVER see any other owner's shop!
+      if (!isSuperAdmin && myId) {
+        shopList = shopList.filter((s) => Number(s.ownerId) === Number(myId));
       }
 
       setAvailableShops(shopList);
 
       let candidateShop: Shop | null = null;
       if (activeSlugToPick) {
-        candidateShop =
-          shopList.find((s) => s.slug === activeSlugToPick) ||
-          allShops.find((s) => s.slug === activeSlugToPick) ||
-          null;
+        candidateShop = shopList.find((s) => s.slug === activeSlugToPick) || null;
       }
 
       if (!candidateShop && shopList.length > 0) {
         candidateShop = shopList[0];
       }
-      if (!candidateShop && allShops.length > 0 && isSuperAdmin) {
-        candidateShop = allShops[0];
+
+      // Only super admin can fall back to allShops
+      if (isSuperAdmin && !candidateShop && allShops.length > 0) {
+        candidateShop = allShops.find((s) => s.slug === activeSlugToPick) || allShops[0];
       }
 
       if (candidateShop) {
@@ -193,6 +261,8 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
         setSettingMinOrder(sh.minOrderAmount);
         setSettingFreeThreshold(sh.freeDeliveryThreshold);
         setSettingAnnouncement(sh.announcement || '');
+        setSettingLogoUrl(sh.logoUrl || '');
+        setSettingBannerUrl(sh.bannerUrl || '');
         setSettingUpiId(sh.upiId || '');
         setSettingTempClosed(sh.isTemporarilyClosed);
 
@@ -516,6 +586,8 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
           minOrderAmount: settingMinOrder,
           freeDeliveryThreshold: settingFreeThreshold,
           announcement: settingAnnouncement,
+          logoUrl: settingLogoUrl,
+          bannerUrl: settingBannerUrl,
           isTemporarilyClosed: settingTempClosed,
           upiId: settingUpiId.trim(),
         }),
@@ -579,9 +651,9 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
         <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-4">
           <Store className="w-8 h-8" />
         </div>
-        <h3 className="text-xl font-black text-slate-900">No Storefront Active</h3>
+        <h3 className="text-xl font-black text-slate-900">आपकी कोई दुकान नहीं मिली (No Storefront Active)</h3>
         <p className="text-xs text-slate-500 mt-2 leading-relaxed">
-          You are currently signed in as a Customer or do not have a shop assigned to this session. Register your shop now or switch to a demo store to start managing products and orders.
+          आपकी आईडी से अभी तक कोई दुकान नहीं जुड़ी है। अपने बिज़नेस का डिजिटल स्टोरफ्रंट शुरू करने के लिए नीचे दिए गए बटन पर क्लिक करें।
         </p>
 
         <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -591,16 +663,9 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
               className="w-full sm:w-auto px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-sm flex items-center justify-center gap-2 cursor-pointer"
             >
               <Plus className="w-4 h-4" />
-              <span>Create Your Digital Storefront</span>
+              <span>➕ अपनी डिजिटल दुकान बनाएं (Create Your Storefront)</span>
             </button>
           )}
-
-          <button
-            onClick={() => switchUser('ramesh.sharma@sharmastore.in')}
-            className="w-full sm:w-auto px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-bold transition cursor-pointer flex items-center justify-center gap-1.5"
-          >
-            <span>Demo: Sharma Store</span>
-          </button>
         </div>
       </div>
     );
@@ -1512,6 +1577,55 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
             </div>
           </div>
 
+          {/* Shop Owner Personal & Account Verification Card */}
+          <div className="bg-slate-50 rounded-2xl border-2 border-slate-200 p-5 space-y-3">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+                  <Building2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-slate-900">
+                    दुकानदार खाता प्रोफाइल (Shop Owner Account Info)
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    केवल आपका अपना प्रोफाइल और आपकी पंजीकृत कंपनी विवरण
+                  </p>
+                </div>
+              </div>
+              <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-black uppercase tracking-wider border border-emerald-300">
+                ✓ Verified Shop Owner
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2 text-xs">
+              <div className="p-3 bg-white rounded-xl border border-slate-200 shadow-2xs">
+                <span className="text-[10px] font-bold uppercase text-slate-400 block">Owner Name</span>
+                <span className="text-sm font-black text-slate-800 mt-0.5 block truncate">
+                  {currentUser?.name || 'Verified Merchant'}
+                </span>
+              </div>
+              <div className="p-3 bg-white rounded-xl border border-slate-200 shadow-2xs">
+                <span className="text-[10px] font-bold uppercase text-slate-400 block">Registered Phone</span>
+                <span className="text-sm font-black text-slate-800 mt-0.5 block truncate">
+                  {currentUser?.phone || shop.businessPhone}
+                </span>
+              </div>
+              <div className="p-3 bg-white rounded-xl border border-slate-200 shadow-2xs">
+                <span className="text-[10px] font-bold uppercase text-slate-400 block">Owner Email / ID</span>
+                <span className="text-sm font-black text-slate-800 mt-0.5 block truncate">
+                  {currentUser?.email || 'N/A'}
+                </span>
+              </div>
+              <div className="p-3 bg-white rounded-xl border border-slate-200 shadow-2xs">
+                <span className="text-[10px] font-bold uppercase text-slate-400 block">Your Registered Shops</span>
+                <span className="text-sm font-black text-emerald-700 mt-0.5 block">
+                  {availableShops.length} Digital Shop(s)
+                </span>
+              </div>
+            </div>
+          </div>
+
           <div className="flex items-center justify-between pb-3 border-b border-slate-100">
             <div>
               <h3 className="text-base font-bold text-slate-900">Edit Company Profile & Operational Details</h3>
@@ -1669,6 +1783,38 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                 onChange={(e) => setSettingDesc(e.target.value)}
                 className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white"
               />
+            </div>
+
+            {/* Shop Logo & Storefront Banner Photos (कैमरा / गैलरी से अपलोड) */}
+            <div className="sm:col-span-2 p-5 bg-slate-50/80 rounded-2xl border-2 border-slate-200/90 space-y-5">
+              <div>
+                <h4 className="text-sm font-black text-slate-900">
+                  दुकान की फोटो और लोगो (Store Logo & Banner Photos)
+                </h4>
+                <p className="text-xs font-bold text-slate-500 mt-0.5">
+                  कैमरा से सीधी फोटो लें या गैलरी से अपनी दुकान का लोगो और मुख्य बैनर लगाएं
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <ImageUploadPicker
+                  label="दुकान का लोगो (Shop Logo Photo)"
+                  sublabel="कैमरा या गैलरी से लोगो लगाएं"
+                  value={settingLogoUrl}
+                  onChange={(val) => setSettingLogoUrl(val)}
+                  aspectRatio="square"
+                  placeholderText="दुकान का लोगो अपलोड करें"
+                />
+
+                <ImageUploadPicker
+                  label="दुकान का मुख्य बैनर (Storefront Banner)"
+                  sublabel="दुकान के बोर्ड या फ्रंट की चौड़ी फोटो"
+                  value={settingBannerUrl}
+                  onChange={(val) => setSettingBannerUrl(val)}
+                  aspectRatio="banner"
+                  placeholderText="दुकान का बैनर अपलोड करें"
+                />
+              </div>
             </div>
 
             <div>
@@ -1880,16 +2026,15 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                 </div>
               </div>
 
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Image URL</label>
-                <input
-                  type="url"
-                  value={pImageUrl}
-                  onChange={(e) => setPImageUrl(e.target.value)}
-                  placeholder="https://images.unsplash.com/..."
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white"
-                />
-              </div>
+              {/* Product Photo Upload (कैमरा या गैलरी से फोटो अपलोड करें) */}
+              <ImageUploadPicker
+                label="उत्पाद की फोटो (Product Photo - Camera / Gallery)"
+                sublabel="कैमरा से सीधी फोटो खींचें या फोन / गैलरी से उत्पाद की फोटो लगाएं"
+                value={pImageUrl}
+                onChange={(val) => setPImageUrl(val)}
+                aspectRatio="square"
+                placeholderText="कैमरा या गैलरी से उत्पाद की फोटो लगाएं"
+              />
 
               <div>
                 <label className="font-bold text-slate-700 block mb-1">Description</label>

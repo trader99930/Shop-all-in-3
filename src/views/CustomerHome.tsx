@@ -13,9 +13,11 @@ import {
   CheckCircle2,
   Phone,
   Flame,
+  Building2,
 } from 'lucide-react';
 import { Shop, Product, Category } from '../types/index.ts';
 import { useCart } from '../context/CartContext.tsx';
+import { useAuth } from '../context/AuthContext.tsx';
 
 interface CustomerHomeProps {
   onSelectShop: (shopSlug: string) => void;
@@ -23,6 +25,7 @@ interface CustomerHomeProps {
   searchQuery: string;
   setSearchQuery: (q: string) => void;
   onOpenVendorOnboarding: () => void;
+  onOpenMyProfile?: () => void;
 }
 
 export const CustomerHome: React.FC<CustomerHomeProps> = ({
@@ -31,15 +34,19 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
   searchQuery,
   setSearchQuery,
   onOpenVendorOnboarding,
+  onOpenMyProfile,
 }) => {
   const { addToCart } = useCart();
+  const { currentUser, getAuthHeaders } = useAuth();
+  const isShopOwner = currentUser?.role === 'shopkeeper';
+
   const [shops, setShops] = useState<Shop[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [popularProducts, setPopularProducts] = useState<{ product: Product; shop: Shop }[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch shops & categories
+  // Fetch shops & categories with multi-tenant filtering
   useEffect(() => {
     let isMounted = true;
     let retryTimer: any = null;
@@ -47,14 +54,24 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
     const fetchData = async (retryCount = 0) => {
       setLoading(true);
       try {
-        const cityParam = selectedCity && selectedCity !== 'All Cities' ? `&city=${encodeURIComponent(selectedCity)}` : '';
-        const catParam = selectedCategory && selectedCategory !== 'All' ? `&category=${encodeURIComponent(selectedCategory)}` : '';
+        const authHeaders = getAuthHeaders();
+        const cityParam = !isShopOwner && selectedCity && selectedCity !== 'All Cities' ? `&city=${encodeURIComponent(selectedCity)}` : '';
+        const catParam = !isShopOwner && selectedCategory && selectedCategory !== 'All' ? `&category=${encodeURIComponent(selectedCategory)}` : '';
         const searchParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : '';
+        const ownerParam = isShopOwner && currentUser?.id ? `&ownerId=${currentUser.id}` : '';
+
+        // For a shop owner, do not restrict status to active only (they see all their shops: active, pending, etc.)
+        const statusParam = isShopOwner ? '' : '?status=active';
+        const connector = statusParam ? '&' : '?';
 
         const [catRes, shopsRes, prodRes] = await Promise.all([
           fetch('/api/categories').catch(() => null),
-          fetch(`/api/shops?status=active${cityParam}${catParam}${searchParam}`).catch(() => null),
-          fetch('/api/products/search?q=').catch(() => null),
+          fetch(`/api/shops${statusParam}${connector}${cityParam}${catParam}${searchParam}${ownerParam}`, {
+            headers: authHeaders,
+          }).catch(() => null),
+          fetch('/api/products/search?q=', {
+            headers: authHeaders,
+          }).catch(() => null),
         ]);
 
         let loadedSomething = false;
@@ -65,14 +82,43 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
           loadedSomething = true;
         }
 
+        const myShopIds = new Set<number>();
+        if (isShopOwner && currentUser) {
+          if (currentUser.shop?.id) myShopIds.add(Number(currentUser.shop.id));
+          (currentUser.shops || []).forEach((sh: Shop) => myShopIds.add(Number(sh.id)));
+        }
+
         if (shopsRes && shopsRes.ok) {
-          const data = await shopsRes.json().catch(() => []);
+          let data = await shopsRes.json().catch(() => []);
+          // STRICT MULTI-TENANT FILTER: Shop owners only see their own shop(s)
+          if (isShopOwner && currentUser) {
+            const myUserId = Number(currentUser.id);
+            data = data.filter((s: Shop) => {
+              const isOwner = s.ownerId && Number(s.ownerId) === myUserId;
+              const isMyShop = myShopIds.has(Number(s.id));
+              return isOwner || isMyShop;
+            });
+            // Update myShopIds with filtered shop IDs
+            data.forEach((s: Shop) => myShopIds.add(Number(s.id)));
+          } else if (isShopOwner && !currentUser) {
+            // While session is loading, never display other shops to a shop owner
+            data = [];
+          }
           if (isMounted) setShops(data);
           loadedSomething = true;
         }
 
         if (prodRes && prodRes.ok) {
-          const prods = await prodRes.json().catch(() => []);
+          let prods = await prodRes.json().catch(() => []);
+          // STRICT MULTI-TENANT FILTER: Shop owners only see their own products
+          if (isShopOwner && currentUser) {
+            prods = prods.filter((item: any) => {
+              const shopId = item.shop?.id || item.product?.shopId;
+              return shopId && myShopIds.has(Number(shopId));
+            });
+          } else if (isShopOwner && !currentUser) {
+            prods = [];
+          }
           if (isMounted) setPopularProducts(prods.slice(0, 8));
           loadedSomething = true;
         }
@@ -96,52 +142,97 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
       isMounted = false;
       if (retryTimer) clearTimeout(retryTimer);
     };
-  }, [selectedCity, selectedCategory, searchQuery]);
+  }, [selectedCity, selectedCategory, searchQuery, isShopOwner, currentUser?.id, currentUser?.shop?.id]);
 
   return (
     <div className="space-y-12 pb-12">
       {/* Hero Showcase Banner */}
-      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-950 via-slate-900 to-teal-950 text-white p-6 sm:p-12 shadow-2xl border border-slate-800">
-        <div className="relative z-10 max-w-3xl space-y-4">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-xs font-bold">
-            <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Hyperlocal Neighborhood Commerce</span>
+      {isShopOwner ? (
+        <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-950 via-slate-900 to-teal-950 text-white p-6 sm:p-10 shadow-2xl border border-emerald-800/40">
+          <div className="relative z-10 max-w-3xl space-y-4">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-xs font-black uppercase tracking-wider">
+              <Building2 className="w-4 h-4 text-emerald-400" />
+              <span>दुकानदार पोर्टल (Merchant Storefront Portal)</span>
+            </div>
+
+            <h1 className="text-2xl sm:text-4xl font-black tracking-tight leading-tight">
+              नमस्ते, {currentUser?.name || 'दुकानदार'}! <br />
+              <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-200 bg-clip-text text-transparent">
+                आपकी अपनी डिजिटल दुकान
+              </span>
+            </h1>
+
+            <p className="text-sm sm:text-base text-slate-300 leading-relaxed max-w-2xl font-semibold">
+              दुकानदार पोर्टल में केवल आपकी अपनी जोड़ी गई दुकान और उत्पाद प्रदर्शित हैं। यहाँ से आप अपनी दुकान की लाइव स्थिति देख सकते हैं या प्रोफाइल और कैटलॉग मैनेज कर सकते हैं।
+            </p>
+
+            <div className="flex flex-wrap items-center gap-3 pt-2">
+              <button
+                onClick={() => onOpenMyProfile?.()}
+                className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white rounded-xl text-sm font-black transition shadow-lg shadow-emerald-500/30 flex items-center gap-2 cursor-pointer"
+              >
+                <Building2 className="w-4 h-4" />
+                <span>🏢 My Company Profile (डैशबोर्ड)</span>
+              </button>
+
+              {shops.length > 0 && (
+                <button
+                  onClick={() => onSelectShop(shops[0].slug)}
+                  className="px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-xl text-sm font-black transition flex items-center gap-2 cursor-pointer backdrop-blur-xs"
+                >
+                  <Store className="w-4 h-4 text-emerald-400" />
+                  <span>🏪 पब्लिक स्टोर देखें (View Live Store)</span>
+                </button>
+              )}
+            </div>
           </div>
 
-          <h1 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight">
-            Support Local Shops. <br />
-            <span className="bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent">
-              Order Directly Online.
-            </span>
-          </h1>
-
-          <p className="text-sm sm:text-base text-slate-300 leading-relaxed max-w-2xl">
-            Order fresh groceries, bakery goods, fashion, stationery, and daily essentials from your trusted local shopkeepers. Delivered to your doorstep or ready for express counter pickup.
-          </p>
-
-          <div className="flex flex-wrap items-center gap-3 pt-2">
-            <div className="flex items-center gap-2 bg-slate-800/80 backdrop-blur-md px-3.5 py-2 rounded-xl border border-slate-700 text-xs">
-              <Truck className="w-4 h-4 text-emerald-400" />
-              <span>30-60 Min Express Delivery</span>
+          <div className="absolute right-0 top-0 w-96 h-96 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none" />
+        </section>
+      ) : (
+        <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-950 via-slate-900 to-teal-950 text-white p-6 sm:p-12 shadow-2xl border border-slate-800">
+          <div className="relative z-10 max-w-3xl space-y-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-xs font-bold">
+              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Hyperlocal Neighborhood Commerce</span>
             </div>
-            <div className="flex items-center gap-2 bg-slate-800/80 backdrop-blur-md px-3.5 py-2 rounded-xl border border-slate-700 text-xs">
-              <Award className="w-4 h-4 text-emerald-400" />
-              <span>Direct Store Pricing & Freshness</span>
-            </div>
-            <div className="flex items-center gap-2 bg-slate-800/80 backdrop-blur-md px-3.5 py-2 rounded-xl border border-slate-700 text-xs">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-              <span>Automated Legal Invoicing</span>
+
+            <h1 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight">
+              Support Local Shops. <br />
+              <span className="bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent">
+                Order Directly Online.
+              </span>
+            </h1>
+
+            <p className="text-sm sm:text-base text-slate-300 leading-relaxed max-w-2xl">
+              Order fresh groceries, bakery goods, fashion, stationery, and daily essentials from your trusted local shopkeepers. Delivered to your doorstep or ready for express counter pickup.
+            </p>
+
+            <div className="flex flex-wrap items-center gap-3 pt-2">
+              <div className="flex items-center gap-2 bg-slate-800/80 backdrop-blur-md px-3.5 py-2 rounded-xl border border-slate-700 text-xs">
+                <Truck className="w-4 h-4 text-emerald-400" />
+                <span>30-60 Min Express Delivery</span>
+              </div>
+              <div className="flex items-center gap-2 bg-slate-800/80 backdrop-blur-md px-3.5 py-2 rounded-xl border border-slate-700 text-xs">
+                <Award className="w-4 h-4 text-emerald-400" />
+                <span>Direct Store Pricing & Freshness</span>
+              </div>
+              <div className="flex items-center gap-2 bg-slate-800/80 backdrop-blur-md px-3.5 py-2 rounded-xl border border-slate-700 text-xs">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <span>Automated Legal Invoicing</span>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Decorative background glow */}
-        <div className="absolute right-0 top-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-      </section>
+          {/* Decorative background glow */}
+          <div className="absolute right-0 top-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+        </section>
+      )}
 
-      {/* Category Pills Slider */}
-      <section className="space-y-3">
-        <div className="flex items-center justify-between">
+      {/* Category Pills Slider (Only for public customer discovery) */}
+      {!isShopOwner && categories.length > 0 && (
+        <section className="space-y-3">
+          <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
             <ShoppingBag className="w-5 h-5 text-emerald-600" />
             <span>Browse by Category</span>
@@ -175,6 +266,7 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
           ))}
         </div>
       </section>
+      )}
 
       {/* Featured Shops Grid */}
       <section className="space-y-4">
@@ -182,14 +274,20 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
           <div>
             <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
               <Store className="w-5 h-5 text-emerald-600" />
-              <span>All Shop Stores & Digital Storefronts</span>
+              <span>
+                {isShopOwner
+                  ? 'मार्केटप्लेस - केवल आपकी जोड़ी गई दुकान (Your Registered Storefront)'
+                  : 'All Shop Stores & Digital Storefronts'}
+              </span>
             </h2>
             <p className="text-xs text-slate-500">
-              Showing verified local businesses in {selectedCity || 'All Cities'}
+              {isShopOwner
+                ? 'मार्केटप्लेस में केवल आपकी अपनी जोड़ी गई दुकान और उत्पाद प्रदर्शित हैं, अन्य किसी विक्रेता की दुकान नहीं।'
+                : `Showing verified local businesses in ${selectedCity || 'All Cities'}`}
             </p>
           </div>
 
-          {selectedCategory !== 'All' && (
+          {!isShopOwner && selectedCategory !== 'All' && (
             <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md self-start sm:self-auto border border-emerald-200">
               Filter: {selectedCategory}
             </span>
@@ -203,17 +301,21 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
             ))}
           </div>
         ) : shops.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-3xl border border-slate-200 p-8">
+          <div className="text-center py-16 bg-white rounded-3xl border border-slate-200 p-8 max-w-md mx-auto">
             <Store className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-            <h3 className="text-base font-bold text-slate-800">No shops found matching your criteria</h3>
+            <h3 className="text-base font-bold text-slate-800">
+              {isShopOwner ? 'आपकी कोई दुकान अभी तक नहीं जुड़ी है' : 'No shops found matching your criteria'}
+            </h3>
             <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-              Try selecting a different city or category, or be the first merchant to open a store here!
+              {isShopOwner
+                ? 'मार्केटप्लेस में लाइव आने के लिए नीचे दिए गए बटन से अपनी दुकान जोड़ें।'
+                : 'Try selecting a different city or category, or be the first merchant to open a store here!'}
             </p>
             <button
               onClick={onOpenVendorOnboarding}
-              className="mt-4 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition"
+              className="mt-4 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-sm cursor-pointer"
             >
-              Register Your Shop on YUNAY
+              {isShopOwner ? '➕ अपनी दुकान जोड़ें (Register Your Store)' : 'Register Your Shop on YUNAY'}
             </button>
           </div>
         ) : (
@@ -222,11 +324,11 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
               <div
                 key={shop.id}
                 onClick={() => onSelectShop(shop.slug)}
-                className="group bg-white rounded-2xl border border-slate-200 hover:border-emerald-300 shadow-xs hover:shadow-xl transition duration-300 overflow-hidden cursor-pointer flex flex-col justify-between"
+                className="group bg-white rounded-2xl border-2 border-slate-200 hover:border-emerald-500 shadow-xs hover:shadow-xl transition duration-300 overflow-hidden cursor-pointer flex flex-col justify-between"
               >
                 <div>
                   {/* Shop Cover Banner */}
-                  <div className="relative h-40 overflow-hidden bg-slate-100">
+                  <div className="relative h-44 overflow-hidden bg-slate-100">
                     <img
                       src={
                         shop.bannerUrl ||
@@ -235,12 +337,19 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
                       alt={shop.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent" />
 
-                    {/* Category pill */}
-                    <span className="absolute top-3 left-3 px-2.5 py-1 rounded-md text-[10px] font-bold bg-white/95 text-slate-800 backdrop-blur-xs shadow-xs">
-                      {shop.category}
-                    </span>
+                    {/* Category pill & My Store Badge */}
+                    <div className="absolute top-3 left-3 flex items-center gap-1.5">
+                      <span className="px-2.5 py-1 rounded-md text-[10px] font-bold bg-white/95 text-slate-800 backdrop-blur-xs shadow-xs">
+                        {shop.category}
+                      </span>
+                      {isShopOwner && (
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-emerald-600 text-white shadow-xs">
+                          👑 आपकी दुकान
+                        </span>
+                      )}
+                    </div>
 
                     {/* Open / Closed Status Indicator */}
                     <div className="absolute top-3 right-3 flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold backdrop-blur-md shadow-xs bg-slate-900/90 text-white">
@@ -299,15 +408,29 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
                   </div>
                 </div>
 
-                {/* Footer with YUNAY Badge */}
+                {/* Footer with YUNAY Badge / Manage Button */}
                 <div className="px-4 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
-                  <div className="flex items-center gap-1 text-[11px] font-bold text-slate-500">
-                    <span>Powered by</span>
-                    <span className="text-emerald-700 font-extrabold">YUNAY</span>
-                  </div>
+                  {isShopOwner ? (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenMyProfile?.();
+                      }}
+                      className="text-xs font-black text-emerald-700 hover:text-emerald-800 flex items-center gap-1 cursor-pointer"
+                    >
+                      <Building2 className="w-3.5 h-3.5" />
+                      <span>मैनेज करें (Manage Profile)</span>
+                    </button>
+                  ) : (
+                    <div className="flex items-center gap-1 text-[11px] font-bold text-slate-500">
+                      <span>Powered by</span>
+                      <span className="text-emerald-700 font-extrabold">YUNAY</span>
+                    </div>
+                  )}
 
                   <span className="text-xs font-bold text-emerald-600 group-hover:text-emerald-700 flex items-center gap-1">
-                    <span>Enter Store</span>
+                    <span>{isShopOwner ? 'स्टोर खोलें (Open Store)' : 'Enter Store'}</span>
                     <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition" />
                   </span>
                 </div>
@@ -324,10 +447,16 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
             <div>
               <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
                 <Flame className="w-5 h-5 text-amber-500" />
-                <span>Popular Neighborhood Products</span>
+                <span>
+                  {isShopOwner
+                    ? 'आपकी दुकान के मुख्य उत्पाद (Your Store Products)'
+                    : 'Popular Neighborhood Products'}
+                </span>
               </h2>
               <p className="text-xs text-slate-500">
-                Fresh items and bestsellers from active neighborhood shops
+                {isShopOwner
+                  ? 'केवल आपकी दुकान में जोड़े गए उत्पाद'
+                  : 'Fresh items and bestsellers from active neighborhood shops'}
               </p>
             </div>
           </div>
@@ -381,12 +510,21 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
                     )}
                   </div>
 
-                  <button
-                    onClick={() => addToCart(product, shop)}
-                    className="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white rounded-lg text-xs font-bold transition border border-emerald-200"
-                  >
-                    Add +
-                  </button>
+                  {isShopOwner ? (
+                    <button
+                      onClick={() => onSelectShop(shop.slug)}
+                      className="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white rounded-lg text-xs font-bold transition border border-emerald-200 cursor-pointer"
+                    >
+                      View
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => addToCart(product, shop)}
+                      className="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white rounded-lg text-xs font-bold transition border border-emerald-200"
+                    >
+                      Add +
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

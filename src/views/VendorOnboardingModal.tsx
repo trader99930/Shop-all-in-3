@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Store, Check, ArrowRight, Upload, MapPin, Clock, Phone, Sparkles, Lock, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.tsx';
+import { ImageUploadPicker } from '../components/ImageUploadPicker.tsx';
 
 interface VendorOnboardingModalProps {
   isOpen: boolean;
@@ -434,23 +435,23 @@ export const VendorOnboardingModal: React.FC<VendorOnboardingModalProps> = ({
                 />
               </div>
 
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Shop Logo URL</label>
-                <input
-                  type="url"
+              <div className="space-y-4 pt-2 border-t border-slate-100">
+                <ImageUploadPicker
+                  label="दुकान का लोगो (Shop Logo Photo)"
+                  sublabel="कैमरा से फोटो लें या गैलरी से लोगो अपलोड करें"
                   value={logoUrl}
-                  onChange={(e) => setLogoUrl(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white"
+                  onChange={(val) => setLogoUrl(val)}
+                  aspectRatio="square"
+                  placeholderText="दुकान के लोगो की फोटो लगाएं"
                 />
-              </div>
 
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Store Banner URL</label>
-                <input
-                  type="url"
+                <ImageUploadPicker
+                  label="दुकान का मुख्य बैनर / बोर्ड फोटो (Storefront Banner)"
+                  sublabel="दुकान के सामने के बोर्ड या काउंटर की फोटो (कैमरा / गैलरी)"
                   value={bannerUrl}
-                  onChange={(e) => setBannerUrl(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white"
+                  onChange={(val) => setBannerUrl(val)}
+                  aspectRatio="banner"
+                  placeholderText="दुकान के बैनर या बोर्ड की फोटो लगाएं"
                 />
               </div>
             </div>

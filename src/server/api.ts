@@ -211,7 +211,7 @@ apiRouter.post('/auth/login', async (req: Request, res: Response) => {
   try {
     const { identifier, password = '', role = 'customer', intendedRole } = req.body;
     if (!identifier || !identifier.trim()) {
-      return res.status(400).json({ error: 'Please enter your Mobile Number, Email, or Admin ID (Yunu)' });
+      return res.status(400).json({ error: 'Please enter your Mobile Number, Email, or ID' });
     }
 
     const cleanIdentifier = identifier.trim();
@@ -761,19 +761,35 @@ apiRouter.delete('/categories/:id', requireAuth, async (req: AuthRequest, res: R
 // 3. SHOPS & STOREFRONTS
 // ==========================================
 
-// Discover all active shops with search and filters
-apiRouter.get('/shops', async (req: Request, res: Response) => {
+// Discover all active shops with search and filters (Strict multi-tenant: shopkeeper only sees their own shops)
+apiRouter.get('/shops', optionalAuth, async (req: AuthRequest, res: Response) => {
   try {
-    const { category, search, city, status } = req.query;
+    const { category, search, city, status, ownerId } = req.query;
 
     let query = db.select().from(shops);
     const conditions = [];
 
+    // STRICT MULTI-TENANT ISOLATION:
+    // If the authenticated user is a shopkeeper (and not super_admin),
+    // they MUST ONLY see their own shop(s), never other merchants' shops!
+    const isShopkeeper = req.dbUser?.role === 'shopkeeper';
+    if (isShopkeeper && req.dbUser?.id) {
+      conditions.push(eq(shops.ownerId, req.dbUser.id));
+    } else if (ownerId) {
+      const parsedOwnerId = parseInt(String(ownerId), 10);
+      if (!isNaN(parsedOwnerId)) {
+        conditions.push(eq(shops.ownerId, parsedOwnerId));
+      }
+    }
+
     if (status && status !== 'all' && String(status).trim() !== '') {
       conditions.push(eq(shops.status, String(status)));
     } else if (status === undefined) {
-      // By default public discovery only shows active shops
-      conditions.push(eq(shops.status, 'active'));
+      // By default public discovery only shows active shops,
+      // but a shopkeeper sees all their own shops (active, pending, etc.)
+      if (!isShopkeeper) {
+        conditions.push(eq(shops.status, 'active'));
+      }
     }
 
     if (category && category !== 'All') {
@@ -1376,10 +1392,44 @@ apiRouter.post('/shops/:shopId/products/bulk-upload', requireAuth, async (req: A
 // 5. PUBLIC PRODUCT SEARCH & DISCOVERY
 // ==========================================
 
-apiRouter.get('/products/search', async (req: Request, res: Response) => {
+apiRouter.get('/products/search', optionalAuth, async (req: AuthRequest, res: Response) => {
   try {
     const { q, category, city } = req.query;
     const term = `%${String(q || '')}%`;
+
+    const isShopkeeper = req.dbUser?.role === 'shopkeeper';
+
+    const conditions: any[] = [
+      eq(products.isActive, true),
+      eq(products.isProhibited, false),
+    ];
+
+    if (!isShopkeeper) {
+      conditions.push(eq(shops.status, 'active'));
+    } else if (req.dbUser?.id) {
+      // Strict: shopkeeper only searches their own products
+      conditions.push(eq(shops.ownerId, req.dbUser.id));
+    }
+
+    if (category && category !== 'All') {
+      conditions.push(eq(products.category, String(category)));
+    }
+
+    if (city && city !== 'All') {
+      conditions.push(ilike(shops.city, `%${String(city)}%`));
+    }
+
+    if (q && String(q).trim() !== '') {
+      const searchOr = or(
+        ilike(products.name, term),
+        ilike(products.description, term),
+        ilike(products.tags, term),
+        ilike(products.category, term)
+      );
+      if (searchOr) {
+        conditions.push(searchOr);
+      }
+    }
 
     let query = db
       .select({
@@ -1398,19 +1448,7 @@ apiRouter.get('/products/search', async (req: Request, res: Response) => {
       })
       .from(products)
       .innerJoin(shops, eq(products.shopId, shops.id))
-      .where(
-        and(
-          eq(products.isActive, true),
-          eq(products.isProhibited, false),
-          eq(shops.status, 'active'),
-          or(
-            ilike(products.name, term),
-            ilike(products.description, term),
-            ilike(products.tags, term),
-            ilike(products.category, term)
-          )
-        )
-      )
+      .where(and(...conditions))
       .limit(30);
 
     const results = await query;

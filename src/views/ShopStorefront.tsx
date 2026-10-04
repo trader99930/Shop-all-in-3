@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { Shop, Product, ProductVariant, Offer, Review } from '../types/index.ts';
 import { useCart } from '../context/CartContext.tsx';
+import { useAuth } from '../context/AuthContext.tsx';
 import { QRCodeModal } from '../components/QRCodeModal.tsx';
 
 interface ShopStorefrontProps {
@@ -27,6 +28,19 @@ interface ShopStorefrontProps {
 
 export const ShopStorefront: React.FC<ShopStorefrontProps> = ({ shopSlug, onBack }) => {
   const { addToCart } = useCart();
+  const { currentUser } = useAuth();
+  const isShopOwner = currentUser?.role === 'shopkeeper';
+
+  // If a shopkeeper is viewing storefront, ensure they can ONLY ever load their own shop
+  const myShops = currentUser?.shops || (currentUser?.shop ? [currentUser.shop] : []);
+  const myShopSlugs = myShops.map((s) => s.slug);
+  const effectiveSlug =
+    isShopOwner
+      ? myShopSlugs.includes(shopSlug)
+        ? shopSlug
+        : currentUser?.shop?.slug || myShopSlugs[0] || shopSlug
+      : shopSlug;
+
   const [shop, setShop] = useState<Shop | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [offers, setOffers] = useState<Offer[]>([]);
@@ -46,9 +60,23 @@ export const ShopStorefront: React.FC<ShopStorefrontProps> = ({ shopSlug, onBack
     const fetchShop = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`/api/shops/${shopSlug}`);
+        if (!effectiveSlug) {
+          setShop(null);
+          return;
+        }
+
+        const res = await fetch(`/api/shops/${effectiveSlug}`);
         if (res.ok) {
           const data = await res.json();
+          // STRICT MULTI-TENANT ISOLATION: A shopkeeper must NEVER see another merchant's storefront
+          if (isShopOwner && currentUser?.id && data.shop) {
+            const myId = Number(currentUser.id);
+            if (Number(data.shop.ownerId) !== myId) {
+              setShop(null);
+              return;
+            }
+          }
+
           setShop(data.shop);
           setProducts(data.products || []);
           setOffers(data.offers || []);
@@ -72,7 +100,7 @@ export const ShopStorefront: React.FC<ShopStorefrontProps> = ({ shopSlug, onBack
     };
 
     fetchShop();
-  }, [shopSlug]);
+  }, [effectiveSlug]);
 
   if (loading) {
     return (
@@ -128,14 +156,24 @@ export const ShopStorefront: React.FC<ShopStorefrontProps> = ({ shopSlug, onBack
   return (
     <div className="space-y-8 pb-16">
       {/* Top back navigation button */}
-      <div>
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <button
           onClick={onBack}
-          className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-emerald-700 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-2xs hover:shadow transition"
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-emerald-700 bg-white px-3.5 py-2 rounded-xl border border-slate-200 shadow-2xs hover:shadow transition cursor-pointer"
         >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          <span>All Neighborhood Stores</span>
+          <ArrowLeft className="w-4 h-4" />
+          <span>
+            {currentUser?.role === 'shopkeeper'
+              ? '← मार्केटप्लेस पर जाएं (Marketplace)'
+              : '← All Neighborhood Stores'}
+          </span>
         </button>
+
+        {currentUser?.role === 'shopkeeper' && (
+          <span className="text-xs font-black text-emerald-800 bg-emerald-100/90 px-3 py-1.5 rounded-xl border border-emerald-300 shadow-2xs flex items-center gap-1.5">
+            <span>👑 आपकी अपनी दुकान का लाइव प्रिव्यू (Live Preview)</span>
+          </span>
+        )}
       </div>
 
       {/* Store Header Banner */}

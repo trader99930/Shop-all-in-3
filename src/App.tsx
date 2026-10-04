@@ -18,7 +18,8 @@ import { Store } from 'lucide-react';
 const MainApp: React.FC = () => {
   const { currentUser, loading } = useAuth();
   const [currentTab, setCurrentTab] = useState<string>('discovery');
-  const [activeShopSlug, setActiveShopSlug] = useState<string>('sharma-general-store');
+  const [activeShopSlug, setActiveShopSlug] = useState<string>('');
+  const [vendorTab, setVendorTab] = useState<'orders' | 'products' | 'stock' | 'customers' | 'offers' | 'settings'>('orders');
   const [selectedCity, setSelectedCity] = useState<string>('All Cities');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
@@ -31,10 +32,13 @@ const MainApp: React.FC = () => {
 
   // Sync active shop slug with current user's shop if available
   useEffect(() => {
-    if (currentUser?.shop?.slug) {
-      setActiveShopSlug(currentUser.shop.slug);
+    if (currentUser?.role === 'shopkeeper') {
+      const mySlug = currentUser.shop?.slug || currentUser.shops?.[0]?.slug;
+      if (mySlug) {
+        setActiveShopSlug(mySlug);
+      }
     }
-  }, [currentUser?.shop?.slug]);
+  }, [currentUser, currentTab]);
 
   // Strict multi-tenant tab protection & role enforcement
   useEffect(() => {
@@ -78,15 +82,46 @@ const MainApp: React.FC = () => {
   };
 
   const handleSelectShop = (slug: string) => {
-    setActiveShopSlug(slug);
+    if (currentUser?.role === 'shopkeeper') {
+      const myShops = currentUser.shops || (currentUser.shop ? [currentUser.shop] : []);
+      const myShopSlugs = myShops.map((s) => s.slug);
+      if (myShopSlugs.includes(slug)) {
+        setActiveShopSlug(slug);
+      } else {
+        setActiveShopSlug(currentUser.shop?.slug || myShopSlugs[0] || slug);
+      }
+    } else {
+      setActiveShopSlug(slug);
+    }
     setCurrentTab('storefront');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleManageShop = (slug: string) => {
-    setActiveShopSlug(slug);
+    if (currentUser?.role === 'shopkeeper') {
+      const myShops = currentUser.shops || (currentUser.shop ? [currentUser.shop] : []);
+      const myShopSlugs = myShops.map((s) => s.slug);
+      if (myShopSlugs.includes(slug)) {
+        setActiveShopSlug(slug);
+      } else {
+        setActiveShopSlug(currentUser.shop?.slug || myShopSlugs[0] || slug);
+      }
+    } else {
+      setActiveShopSlug(slug);
+    }
+    setVendorTab('orders');
     setCurrentTab('vendor');
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleOpenCompanyProfile = () => {
+    if (currentUser?.role === 'shopkeeper') {
+      const mySlug = currentUser.shop?.slug || currentUser.shops?.[0]?.slug;
+      if (mySlug) setActiveShopSlug(mySlug);
+      setVendorTab('settings');
+      setCurrentTab('vendor');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   const handleOrderPlaced = (_newOrder: Order) => {
@@ -96,6 +131,7 @@ const MainApp: React.FC = () => {
 
   const handleVendorOnboardSuccess = (slug: string) => {
     setActiveShopSlug(slug);
+    setVendorTab('orders');
     setCurrentTab('vendor');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -133,6 +169,8 @@ const MainApp: React.FC = () => {
         onOpenVendorOnboarding={() => setShowVendorOnboarding(true)}
         onOpenPolicies={(type) => setPolicyType(type)}
         onOpenLogin={handleOpenLogin}
+        onOpenCompanyProfile={handleOpenCompanyProfile}
+        vendorActiveTab={vendorTab}
       />
 
       {/* Main Content Area */}
@@ -144,6 +182,7 @@ const MainApp: React.FC = () => {
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
             onOpenVendorOnboarding={() => setShowVendorOnboarding(true)}
+            onOpenMyProfile={handleOpenCompanyProfile}
           />
         )}
 
@@ -165,6 +204,7 @@ const MainApp: React.FC = () => {
             onViewPublicStore={handleSelectShop}
             onOpenVendorOnboarding={() => setShowVendorOnboarding(true)}
             initialShopSlug={activeShopSlug}
+            initialTab={vendorTab}
           />
         )}
 
