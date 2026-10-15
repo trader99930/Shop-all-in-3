@@ -6,7 +6,7 @@ import express from 'express';
 
 export default defineConfig(() => {
   return {
-    base: '/Shop-all-in-3/',
+    
     plugins: [
       react(),
       tailwindcss(),
