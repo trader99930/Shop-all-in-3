@@ -1,5 +1,96 @@
 @import "tailwindcss";
 
+/* 5 Distinct Color Themes */
+html.theme-emerald, :root {
+  --color-emerald-50: #ecfdf5;
+  --color-emerald-100: #d1fae5;
+  --color-emerald-200: #a7f3d0;
+  --color-emerald-300: #6ee7b7;
+  --color-emerald-400: #34d399;
+  --color-emerald-500: #10b981;
+  --color-emerald-600: #059669;
+  --color-emerald-700: #047857;
+  --color-emerald-800: #065f46;
+  --color-emerald-900: #064e3b;
+  --color-emerald-950: #022c22;
+  --color-teal-400: #2dd4bf;
+  --color-teal-500: #14b8a6;
+  --color-teal-600: #0d9488;
+  --color-teal-700: #0f766e;
+}
+
+html.theme-blue {
+  --color-emerald-50: #eff6ff;
+  --color-emerald-100: #dbeafe;
+  --color-emerald-200: #bfdbfe;
+  --color-emerald-300: #93c5fd;
+  --color-emerald-400: #60a5fa;
+  --color-emerald-500: #3b82f6;
+  --color-emerald-600: #2563eb;
+  --color-emerald-700: #1d4ed8;
+  --color-emerald-800: #1e40af;
+  --color-emerald-900: #1e3a8a;
+  --color-emerald-950: #172554;
+  --color-teal-400: #38bdf8;
+  --color-teal-500: #0ea5e9;
+  --color-teal-600: #0284c7;
+  --color-teal-700: #0369a1;
+}
+
+html.theme-purple {
+  --color-emerald-50: #faf5ff;
+  --color-emerald-100: #f3e8ff;
+  --color-emerald-200: #e9d5ff;
+  --color-emerald-300: #d8b4fe;
+  --color-emerald-400: #c084fc;
+  --color-emerald-500: #a855f7;
+  --color-emerald-600: #7c3aed;
+  --color-emerald-700: #6d28d9;
+  --color-emerald-800: #5b21b6;
+  --color-emerald-900: #4c1d95;
+  --color-emerald-950: #2e1065;
+  --color-teal-400: #c084fc;
+  --color-teal-500: #a855f7;
+  --color-teal-600: #7e22ce;
+  --color-teal-700: #6b21a8;
+}
+
+html.theme-rose {
+  --color-emerald-50: #fff1f2;
+  --color-emerald-100: #ffe4e6;
+  --color-emerald-200: #fecdd3;
+  --color-emerald-300: #fda4af;
+  --color-emerald-400: #fb7185;
+  --color-emerald-500: #f43f5e;
+  --color-emerald-600: #e11d48;
+  --color-emerald-700: #be123c;
+  --color-emerald-800: #9f1239;
+  --color-emerald-900: #881337;
+  --color-emerald-950: #4c0519;
+  --color-teal-400: #f43f5e;
+  --color-teal-500: #e11d48;
+  --color-teal-600: #be123c;
+  --color-teal-700: #9f1239;
+}
+
+html.theme-amber {
+  --color-emerald-50: #fffbeb;
+  --color-emerald-100: #fef3c7;
+  --color-emerald-200: #fde68a;
+  --color-emerald-300: #fcd34d;
+  --color-emerald-400: #fbbf24;
+  --color-emerald-500: #f59e0b;
+  --color-emerald-600: #d97706;
+  --color-emerald-700: #b45309;
+  --color-emerald-800: #92400e;
+  --color-emerald-900: #78350f;
+  --color-emerald-950: #451a03;
+  --color-teal-400: #fb923c;
+  --color-teal-500: #f97316;
+  --color-teal-600: #ea580c;
+  --color-teal-700: #c2410c;
+}
+
 @layer base {
   html {
     font-size: 16.5px;

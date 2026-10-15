@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Store, Check, ArrowRight, Upload, MapPin, Clock, Phone, Sparkles, Lock, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.tsx';
+import { useLanguage } from '../context/LanguageContext.tsx';
 import { ImageUploadPicker } from '../components/ImageUploadPicker.tsx';
 
 interface VendorOnboardingModalProps {
@@ -15,6 +16,7 @@ export const VendorOnboardingModal: React.FC<VendorOnboardingModalProps> = ({
   onSuccess,
 }) => {
   const { currentUser, switchUser, refreshSession, getAuthHeaders } = useAuth();
+  const { isHindi } = useLanguage();
   const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -279,19 +281,23 @@ export const VendorOnboardingModal: React.FC<VendorOnboardingModalProps> = ({
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-black text-emerald-900 flex items-center gap-1.5">
                     <Lock className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>Create Shop Owner Password (दुकानदार पासवर्ड बनाएं)</span>
+                    <span>{isHindi ? 'दुकानदार पासवर्ड बनाएं' : 'Create Shop Owner Password'}</span>
                   </span>
                   <span className="text-[10px] text-emerald-700 font-bold bg-emerald-100 px-1.5 py-0.5 rounded-full">
-                    Required for Sign In
+                    {isHindi ? 'लॉग इन हेतु आवश्यक' : 'Required for Sign In'}
                   </span>
                 </div>
                 <p className="text-[10px] text-slate-500 pb-1">
-                  You will use this password along with your mobile/email to sign in to your merchant dashboard.
+                  {isHindi
+                    ? 'इस पासवर्ड और अपने मोबाइल/ईमेल से आप बाद में अपने दुकानदार डैशबोर्ड में लॉग इन करेंगे।'
+                    : 'You will use this password along with your mobile/email to sign in to your merchant dashboard.'}
                 </p>
 
                 <div className="grid grid-cols-2 gap-2.5 pt-1">
                   <div>
-                    <label className="font-bold text-slate-700 block mb-1 text-[11px]">Password (पासवर्ड) *</label>
+                    <label className="font-bold text-slate-700 block mb-1 text-[11px]">
+                      {isHindi ? 'पासवर्ड *' : 'Password *'}
+                    </label>
                     <div className="relative">
                       <input
                         type={showPassword ? 'text' : 'password'}
@@ -313,7 +319,9 @@ export const VendorOnboardingModal: React.FC<VendorOnboardingModalProps> = ({
                     </div>
                   </div>
                   <div>
-                    <label className="font-bold text-slate-700 block mb-1 text-[11px]">Confirm Password (दोबारा डालें) *</label>
+                    <label className="font-bold text-slate-700 block mb-1 text-[11px]">
+                      {isHindi ? 'पासवर्ड दोबारा डालें *' : 'Confirm Password *'}
+                    </label>
                     <div className="relative">
                       <input
                         type={showConfirmPassword ? 'text' : 'password'}
@@ -437,21 +445,21 @@ export const VendorOnboardingModal: React.FC<VendorOnboardingModalProps> = ({
 
               <div className="space-y-4 pt-2 border-t border-slate-100">
                 <ImageUploadPicker
-                  label="दुकान का लोगो (Shop Logo Photo)"
-                  sublabel="कैमरा से फोटो लें या गैलरी से लोगो अपलोड करें"
+                  label={isHindi ? 'दुकान का लोगो' : 'Shop Logo Photo'}
+                  sublabel={isHindi ? 'कैमरा से फोटो लें या गैलरी से लोगो लगाएं' : 'Take camera photo or pick logo from gallery'}
                   value={logoUrl}
                   onChange={(val) => setLogoUrl(val)}
                   aspectRatio="square"
-                  placeholderText="दुकान के लोगो की फोटो लगाएं"
+                  placeholderText={isHindi ? 'दुकान के लोगो की फोटो लगाएं' : 'Upload shop logo photo'}
                 />
 
                 <ImageUploadPicker
-                  label="दुकान का मुख्य बैनर / बोर्ड फोटो (Storefront Banner)"
-                  sublabel="दुकान के सामने के बोर्ड या काउंटर की फोटो (कैमरा / गैलरी)"
+                  label={isHindi ? 'दुकान का मुख्य बैनर या बोर्ड फोटो' : 'Storefront Banner / Shop Board'}
+                  sublabel={isHindi ? 'दुकान के सामने के बोर्ड या काउंटर की फोटो (कैमरा / गैलरी)' : 'Storefront exterior board or counter photo (camera / gallery)'}
                   value={bannerUrl}
                   onChange={(val) => setBannerUrl(val)}
                   aspectRatio="banner"
-                  placeholderText="दुकान के बैनर या बोर्ड की फोटो लगाएं"
+                  placeholderText={isHindi ? 'दुकान के बैनर या बोर्ड की फोटो लगाएं' : 'Upload shop banner or board photo'}
                 />
               </div>
             </div>

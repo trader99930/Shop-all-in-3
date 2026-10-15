@@ -1,5 +1,6 @@
 import React from 'react';
 import { Store, ShieldCheck, HeartHandshake, Phone, Mail, Award, ExternalLink } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext.tsx';
 
 interface FooterProps {
   onOpenPolicies: (type: string) => void;
@@ -12,6 +13,7 @@ export const Footer: React.FC<FooterProps> = ({
   onOpenVendorOnboarding,
   setCurrentTab,
 }) => {
+  const { isHindi } = useLanguage();
   return (
     <footer className="bg-slate-900 text-slate-300 border-t border-slate-800 mt-20">
       {/* Platform Highlight Banner */}
@@ -23,10 +25,14 @@ export const Footer: React.FC<FooterProps> = ({
             </div>
             <div>
               <h3 className="text-xl font-bold text-white tracking-tight">
-                Empowering Local Merchants with Digital Commerce
+                {isHindi
+                  ? 'स्थानीय दुकानदारों को डिजिटल कॉमर्स से सशक्त बनाना'
+                  : 'Empowering Local Merchants with Digital Commerce'}
               </h3>
               <p className="text-sm text-slate-400 max-w-xl">
-                YUNAY equips independent neighborhood grocers, bakeries, fashion boutiques, and specialty shops with online storefronts, inventory tracking, and automatic billing.
+                {isHindi
+                  ? 'YUNAY आपके मोहल्ले के किराना स्टोर, बेकरी, फैशन और अन्य दुकानों को ऑनलाइन स्टोर, स्टॉक ट्रैकिंग और बिलिंग की सुविधा देता है।'
+                  : 'YUNAY equips independent neighborhood grocers, bakeries, fashion boutiques, and specialty shops with online storefronts, inventory tracking, and automatic billing.'}
               </p>
             </div>
           </div>
@@ -34,7 +40,7 @@ export const Footer: React.FC<FooterProps> = ({
             onClick={onOpenVendorOnboarding}
             className="shrink-0 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-6 py-3 rounded-xl shadow-lg shadow-emerald-500/10 hover:shadow-emerald-500/25 transition cursor-pointer"
           >
-            Create Your Digital Store
+            {isHindi ? 'अपनी डिजिटल दुकान बनाएं' : 'Create Your Digital Store'}
           </button>
         </div>
       </div>
@@ -50,7 +56,9 @@ export const Footer: React.FC<FooterProps> = ({
               <span className="text-2xl font-black tracking-tight text-white">YUNAY</span>
             </div>
             <p className="text-xs text-slate-400 leading-relaxed">
-              India's scalable multi-vendor local commerce ecosystem. Connecting neighborhood shops directly with their local customers.
+              {isHindi
+                ? 'भारत का स्केलेबल मल्टी-वेंडर स्थानीय कॉमर्स नेटवर्क। मोहल्ले की दुकानों को सीधे उनके ग्राहकों से जोड़ता है।'
+                : "India's scalable multi-vendor local commerce ecosystem. Connecting neighborhood shops directly with their local customers."}
             </p>
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/60 text-xs text-emerald-400 font-semibold">
               <Award className="w-4 h-4" />
@@ -61,39 +69,39 @@ export const Footer: React.FC<FooterProps> = ({
           {/* Shoppers Links */}
           <div>
             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4">
-              For Shoppers
+              {isHindi ? 'ग्राहकों के लिए' : 'For Shoppers'}
             </h4>
             <ul className="space-y-2.5 text-xs text-slate-300">
               <li>
                 <button
                   onClick={() => setCurrentTab('discovery')}
-                  className="hover:text-emerald-400 transition"
+                  className="hover:text-emerald-400 transition cursor-pointer"
                 >
-                  Browse Neighborhood Shops
+                  {isHindi ? 'आस-पास की दुकानें देखें' : 'Browse Neighborhood Shops'}
                 </button>
               </li>
               <li>
                 <button
                   onClick={() => setCurrentTab('customer_orders')}
-                  className="hover:text-emerald-400 transition"
+                  className="hover:text-emerald-400 transition cursor-pointer"
                 >
-                  Track Recent Orders
+                  {isHindi ? 'ऑर्डर ट्रैक करें' : 'Track Recent Orders'}
                 </button>
               </li>
               <li>
                 <button
                   onClick={() => onOpenPolicies('delivery')}
-                  className="hover:text-emerald-400 transition"
+                  className="hover:text-emerald-400 transition cursor-pointer"
                 >
-                  Local Express Delivery
+                  {isHindi ? 'लोकल एक्सप्रेस डिलीवरी' : 'Local Express Delivery'}
                 </button>
               </li>
               <li>
                 <button
                   onClick={() => onOpenPolicies('cancellation')}
-                  className="hover:text-emerald-400 transition"
+                  className="hover:text-emerald-400 transition cursor-pointer"
                 >
-                  Cancellation & Refund Terms
+                  {isHindi ? 'रद्दीकरण व रिफंड नियम' : 'Cancellation & Refund Terms'}
                 </button>
               </li>
             </ul>
@@ -102,39 +110,39 @@ export const Footer: React.FC<FooterProps> = ({
           {/* Merchants Links */}
           <div>
             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4">
-              For Merchants
+              {isHindi ? 'दुकानदारों के लिए' : 'For Merchants'}
             </h4>
             <ul className="space-y-2.5 text-xs text-slate-300">
               <li>
                 <button
                   onClick={onOpenVendorOnboarding}
-                  className="hover:text-emerald-400 transition"
+                  className="hover:text-emerald-400 transition cursor-pointer"
                 >
-                  Vendor Onboarding & Registration
+                  {isHindi ? 'नया दुकानदार पंजीकरण' : 'Vendor Onboarding & Registration'}
                 </button>
               </li>
               <li>
                 <button
                   onClick={() => setCurrentTab('vendor')}
-                  className="hover:text-emerald-400 transition"
+                  className="hover:text-emerald-400 transition cursor-pointer"
                 >
-                  Merchant Order & Stock Dashboard
+                  {isHindi ? 'ऑर्डर व स्टॉक डैशबोर्ड' : 'Merchant Order & Stock Dashboard'}
                 </button>
               </li>
               <li>
                 <button
                   onClick={() => onOpenPolicies('vendor')}
-                  className="hover:text-emerald-400 transition"
+                  className="hover:text-emerald-400 transition cursor-pointer"
                 >
-                  Merchant Partnership Agreement
+                  {isHindi ? 'व्यापारी अनुबंध शर्तें' : 'Merchant Partnership Agreement'}
                 </button>
               </li>
               <li>
                 <button
                   onClick={() => onOpenPolicies('terms')}
-                  className="hover:text-emerald-400 transition"
+                  className="hover:text-emerald-400 transition cursor-pointer"
                 >
-                  Platform Fair Commission Rules
+                  {isHindi ? 'उचित कमीशन नियम' : 'Platform Fair Commission Rules'}
                 </button>
               </li>
             </ul>
@@ -143,24 +151,24 @@ export const Footer: React.FC<FooterProps> = ({
           {/* Legal & Compliance */}
           <div>
             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4">
-              Legal & Support
+              {isHindi ? 'नीति व सहायता' : 'Legal & Support'}
             </h4>
             <ul className="space-y-2.5 text-xs text-slate-300">
               <li>
                 <button
                   onClick={() => onOpenPolicies('terms')}
-                  className="hover:text-emerald-400 transition flex items-center gap-1"
+                  className="hover:text-emerald-400 transition flex items-center gap-1 cursor-pointer"
                 >
-                  <span>Terms & Conditions</span>
+                  <span>{isHindi ? 'नियम और शर्तें' : 'Terms & Conditions'}</span>
                   <ExternalLink className="w-3 h-3 text-slate-500" />
                 </button>
               </li>
               <li>
                 <button
                   onClick={() => onOpenPolicies('privacy')}
-                  className="hover:text-emerald-400 transition flex items-center gap-1"
+                  className="hover:text-emerald-400 transition flex items-center gap-1 cursor-pointer"
                 >
-                  <span>Privacy Policy</span>
+                  <span>{isHindi ? 'गोपनीयता नीति' : 'Privacy Policy'}</span>
                   <ExternalLink className="w-3 h-3 text-slate-500" />
                 </button>
               </li>
@@ -177,9 +185,9 @@ export const Footer: React.FC<FooterProps> = ({
         </div>
 
         <div className="border-t border-slate-800 mt-10 pt-6 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-4">
-          <p>© {new Date().getFullYear()} YUNAY Platform Technologies Inc. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} YUNAY Platform Technologies Inc. {isHindi ? 'सर्वाधिकार सुरक्षित।' : 'All rights reserved.'}</p>
           <div className="flex items-center gap-3">
-            <span className="text-slate-400 font-medium">Every Storefront is</span>
+            <span className="text-slate-400 font-medium">{isHindi ? 'प्रत्येक दुकान' : 'Every Storefront is'}</span>
             <span className="font-bold text-emerald-400 bg-emerald-950/80 px-2.5 py-1 rounded border border-emerald-800/60">
               Powered by YUNAY
             </span>

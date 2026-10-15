@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext.tsx';
 import { CartProvider } from './context/CartContext.tsx';
+import { LanguageProvider } from './context/LanguageContext.tsx';
+import { ThemeProvider } from './context/ThemeContext.tsx';
 import { Navbar } from './components/Navbar.tsx';
 import { Footer } from './components/Footer.tsx';
 import { CartDrawer } from './components/CartDrawer.tsx';
@@ -257,10 +259,14 @@ const MainApp: React.FC = () => {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <CartProvider>
-        <MainApp />
-      </CartProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <LanguageProvider>
+        <AuthProvider>
+          <CartProvider>
+            <MainApp />
+          </CartProvider>
+        </AuthProvider>
+      </LanguageProvider>
+    </ThemeProvider>
   );
 }

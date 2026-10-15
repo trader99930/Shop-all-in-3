@@ -1,5 +1,6 @@
 import React from 'react';
 import { X, ShieldCheck, FileText, Truck, RefreshCcw, Handshake } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext.tsx';
 
 interface PoliciesModalProps {
   policyType: string | null;
@@ -7,6 +8,7 @@ interface PoliciesModalProps {
 }
 
 export const PoliciesModal: React.FC<PoliciesModalProps> = ({ policyType, onClose }) => {
+  const { isHindi } = useLanguage();
   if (!policyType) return null;
 
   const getPolicyContent = () => {
@@ -150,13 +152,13 @@ export const PoliciesModal: React.FC<PoliciesModalProps> = ({ policyType, onClos
 
         <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
           <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md">
-            YUNAY Platform Standard
+            {isHindi ? 'YUNAY प्लेटफ़ॉर्म मानक' : 'YUNAY Platform Standard'}
           </span>
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition"
+            className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition cursor-pointer"
           >
-            I Understand
+            {isHindi ? 'मैं समझ गया / बंद करें' : 'I Understand'}
           </button>
         </div>
       </div>

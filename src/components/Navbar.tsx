@@ -16,6 +16,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.tsx';
 import { useCart } from '../context/CartContext.tsx';
+import { useLanguage } from '../context/LanguageContext.tsx';
+import { ThemeLanguageControls } from './ThemeLanguageControls.tsx';
 import { NotificationItem } from '../types/index.ts';
 
 interface NavbarProps {
@@ -45,6 +47,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
   const { currentUser, logout, getAuthHeaders } = useAuth();
   const { items, setIsCartOpen } = useCart();
+  const { t, isHindi } = useLanguage();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
@@ -129,7 +132,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <div className="relative">
               <input
                 type="text"
-                placeholder="Search local stores, groceries, bakery, apparel..."
+                placeholder={t('nav.search_placeholder', 'Search local stores, groceries, bakery, apparel...')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-9 pr-4 py-2 bg-slate-100/90 hover:bg-slate-100 focus:bg-white rounded-xl text-xs sm:text-sm border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition"
@@ -138,11 +141,14 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           </div>
 
-          {/* Navigation Controls */}
+          {/* Navigation Controls & Theme/Language Selector */}
           <div className="flex items-center gap-2 sm:gap-3">
+            {/* Dedicated Theme & Language Quick Selector */}
+            <ThemeLanguageControls />
+
             {/* 1. LOGGED OUT STATE */}
             {!currentUser && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2">
                 <button
                   onClick={() => setCurrentTab('discovery')}
                   className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
@@ -152,23 +158,23 @@ export const Navbar: React.FC<NavbarProps> = ({
                   }`}
                 >
                   <Store className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>All Shop Stores</span>
+                  <span>{t('nav.all_shops', 'All Shop Stores')}</span>
                 </button>
 
                 <button
                   onClick={() => onOpenLogin('signin')}
-                  className="flex items-center gap-1.5 px-3.5 py-2 text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-xl text-xs font-bold transition border border-slate-200 cursor-pointer"
+                  className="flex items-center gap-1.5 px-3 py-2 text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-xl text-xs font-bold transition border border-slate-200 cursor-pointer"
                 >
                   <LogIn className="w-3.5 h-3.5 text-slate-600" />
-                  <span>Sign In</span>
+                  <span>{t('nav.signin', 'Sign In')}</span>
                 </button>
 
                 <button
                   onClick={() => onOpenLogin('signup')}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-md shadow-emerald-600/20 hover:shadow-lg transition cursor-pointer"
+                  className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-md shadow-emerald-600/20 hover:shadow-lg transition cursor-pointer"
                 >
                   <UserPlus className="w-3.5 h-3.5" />
-                  <span>Sign Up</span>
+                  <span>{t('nav.signup', 'Sign Up')}</span>
                 </button>
               </div>
             )}
@@ -185,7 +191,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   }`}
                 >
                   <ShieldCheck className="w-4 h-4" />
-                  <span>Admin Hub</span>
+                  <span>{t('nav.admin_hub', 'Admin Hub')}</span>
                 </button>
 
                 <button
@@ -197,7 +203,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   }`}
                 >
                   <Store className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>All Stores</span>
+                  <span>{t('nav.all_shops', 'All Stores')}</span>
                 </button>
               </div>
             )}
@@ -220,7 +226,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   }`}
                 >
                   <Building2 className="w-4 h-4" />
-                  <span>🏢 My Company Profile</span>
+                  <span>{t('nav.my_company_profile', '🏢 My Company Profile')}</span>
                 </button>
 
                 <button
@@ -232,7 +238,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   }`}
                 >
                   <Store className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Marketplace</span>
+                  <span>{t('nav.marketplace', 'Marketplace')}</span>
                 </button>
               </div>
             )}
@@ -249,7 +255,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   }`}
                 >
                   <Store className="w-4 h-4" />
-                  <span>🏬 All Shop Stores</span>
+                  <span>{t('nav.all_shops', '🏬 All Shop Stores')}</span>
                 </button>
 
                 <button
@@ -261,7 +267,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   }`}
                 >
                   <FileText className="w-4 h-4 text-emerald-500" />
-                  <span>My Orders</span>
+                  <span>{t('nav.my_orders', 'My Orders')}</span>
                 </button>
               </div>
             )}
@@ -378,10 +384,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                             }`}
                           >
                             {currentUser.role === 'super_admin'
-                              ? 'Platform Administrator'
+                              ? isHindi ? 'प्लेटफ़ॉर्म एडमिन' : 'Platform Administrator'
                               : currentUser.role === 'shopkeeper'
-                              ? 'Verified Merchant'
-                              : 'Customer Account'}
+                              ? isHindi ? 'सत्यापित दुकानदार' : 'Verified Merchant'
+                              : isHindi ? 'ग्राहक खाता' : 'Customer Account'}
                           </span>
                         </div>
                       </div>
@@ -401,7 +407,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                               className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 rounded-xl flex items-center gap-2 transition"
                             >
                               <Building2 className="w-4 h-4 text-emerald-600" />
-                              <span>🏢 My Company Profile (कंपनी प्रोफाइल)</span>
+                              <span>{t('nav.my_company_profile', '🏢 My Company Profile')}</span>
                             </button>
                             <button
                               onClick={() => {
@@ -411,7 +417,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                               className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 rounded-xl flex items-center gap-2 transition"
                             >
                               <ShoppingCart className="w-4 h-4 text-emerald-600" />
-                              <span>📦 Orders & Products (डैशबोर्ड)</span>
+                              <span>{t('nav.my_dashboard', '📦 Orders & Products')}</span>
                             </button>
                           </>
                         )}
@@ -425,7 +431,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                             className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 rounded-xl flex items-center gap-2 transition"
                           >
                             <FileText className="w-4 h-4 text-blue-600" />
-                            <span>My Orders & Invoices</span>
+                            <span>{t('nav.my_orders', 'My Orders')}</span>
                           </button>
                         )}
 
@@ -438,7 +444,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                             className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 rounded-xl flex items-center gap-2 transition"
                           >
                             <ShieldCheck className="w-4 h-4 text-purple-600" />
-                            <span>Super Admin Console</span>
+                            <span>{t('nav.admin_hub', 'Admin Hub')}</span>
                           </button>
                         )}
 
@@ -452,7 +458,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                             className="w-full text-left px-3 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 rounded-xl flex items-center gap-2 transition cursor-pointer"
                           >
                             <LogOut className="w-4 h-4 text-rose-600" />
-                            <span>Sign Out</span>
+                            <span>{t('nav.signout', 'Sign Out')}</span>
                           </button>
                         </div>
                       </div>

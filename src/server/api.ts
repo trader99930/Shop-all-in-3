@@ -290,13 +290,13 @@ apiRouter.post('/auth/login', async (req: Request, res: Response) => {
       // Role Mismatch Check: Ensure users only sign in through their designated portal
       if (targetRole === 'shopkeeper' && user.role === 'customer') {
         return res.status(403).json({
-          error: 'This account is registered as a Customer (ग्राहक). Please switch to "Customer Sign In" to access your account.',
+          error: 'This account is registered as a Customer. Please switch to "Customer Sign In" to access your account.',
           accountRole: 'customer',
         });
       }
       if (targetRole === 'customer' && user.role === 'shopkeeper') {
         return res.status(403).json({
-          error: 'This account is registered as a Shop Owner (दुकानदार). Please switch to "Shop Owner Sign In" to access your store.',
+          error: 'This account is registered as a Shop Owner. Please switch to "Shop Owner Sign In" to access your store.',
           accountRole: 'shopkeeper',
         });
       }

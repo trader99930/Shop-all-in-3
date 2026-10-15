@@ -1,6 +1,7 @@
-import React from 'react';
-import { X, Printer, Download, Share2, CheckCircle2, Store, Award } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, Printer, Download, Share2, CheckCircle2, Store, Award, Check } from 'lucide-react';
 import { Order, Shop, Invoice, OrderItem } from '../types/index.ts';
+import { useLanguage } from '../context/LanguageContext.tsx';
 
 interface InvoiceModalProps {
   order: Order | null;
@@ -17,6 +18,9 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
   items,
   onClose,
 }) => {
+  const { isHindi } = useLanguage();
+  const [copied, setCopied] = useState(false);
+
   if (!order) return null;
 
   const handlePrint = () => {
@@ -29,7 +33,8 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
       navigator.share({ title: `Invoice - ${order.orderNumber}`, text }).catch(() => {});
     } else {
       navigator.clipboard.writeText(text);
-      alert('Invoice summary copied to clipboard!');
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
     }
   };
 
@@ -40,7 +45,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
         <div className="flex items-center justify-between pb-6 border-b border-slate-100 print:hidden">
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200">
-              Tax Invoice
+              {isHindi ? 'टैक्स इनवॉइस' : 'Tax Invoice'}
             </span>
             <span className="text-xs text-slate-500">#{invoice?.invoiceNumber || `INV-${order.orderNumber}`}</span>
           </div>
@@ -48,21 +53,21 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
           <div className="flex items-center gap-2">
             <button
               onClick={handlePrint}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition cursor-pointer"
             >
               <Printer className="w-3.5 h-3.5" />
-              <span>Print Bill</span>
+              <span>{isHindi ? 'प्रिंट बिल' : 'Print Bill'}</span>
             </button>
             <button
               onClick={handleShare}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-lg transition"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-lg transition cursor-pointer"
             >
-              <Share2 className="w-3.5 h-3.5" />
-              <span>Share</span>
+              {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Share2 className="w-3.5 h-3.5" />}
+              <span>{copied ? (isHindi ? 'कॉपी हुआ!' : 'Copied!') : (isHindi ? 'शेयर' : 'Share')}</span>
             </button>
             <button
               onClick={onClose}
-              className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition"
+              className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -88,9 +93,9 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
                 )}
                 <div>
                   <h2 className="text-xl font-bold text-slate-900 tracking-tight">
-                    {shop?.name || 'Local Neighborhood Store'}
+                    {shop?.name || (isHindi ? 'स्थानीय दुकान' : 'Local Neighborhood Store')}
                   </h2>
-                  <p className="text-xs text-slate-500">{shop?.category} Merchant</p>
+                  <p className="text-xs text-slate-500">{shop?.category} {isHindi ? 'व्यापारी' : 'Merchant'}</p>
                 </div>
               </div>
               <p className="text-xs text-slate-600 max-w-xs">{shop?.address}</p>
@@ -106,18 +111,18 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
                 <span>Powered by YUNAY</span>
               </div>
               <p className="text-xs font-semibold text-slate-900">
-                Invoice: <span className="font-mono">{invoice?.invoiceNumber || `INV-${order.orderNumber}`}</span>
+                {isHindi ? 'इनवॉइस:' : 'Invoice:'} <span className="font-mono">{invoice?.invoiceNumber || `INV-${order.orderNumber}`}</span>
               </p>
               <p className="text-xs text-slate-500">
-                Order Ref: <span className="font-mono">{order.orderNumber}</span>
+                {isHindi ? 'ऑर्डर संख्या:' : 'Order Ref:'} <span className="font-mono">{order.orderNumber}</span>
               </p>
               <p className="text-xs text-slate-500">
-                Date: {new Date(order.createdAt).toLocaleDateString()} at{' '}
+                {isHindi ? 'दिनांक:' : 'Date:'} {new Date(order.createdAt).toLocaleDateString()} {isHindi ? 'समय:' : 'at'}{' '}
                 {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </p>
               <div className="mt-2 inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
                 <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                <span>Status: {order.status}</span>
+                <span>{isHindi ? 'स्थिति:' : 'Status:'} {order.status}</span>
               </div>
             </div>
           </div>
@@ -126,25 +131,25 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100 text-xs">
             <div>
               <p className="font-bold text-slate-400 uppercase tracking-wider text-[10px] mb-1">
-                Billed To (Customer)
+                {isHindi ? 'ग्राहक विवरण' : 'Billed To (Customer)'}
               </p>
               <p className="font-bold text-slate-900">{order.customerName}</p>
               <p className="text-slate-600 font-medium">{order.customerPhone}</p>
               <p className="text-slate-500 mt-1 capitalize font-semibold text-emerald-800">
-                Type: {order.orderType === 'pickup' ? 'Store Counter Pickup' : 'Home Delivery'}
+                {isHindi ? 'प्रकार:' : 'Type:'} {order.orderType === 'pickup' ? (isHindi ? 'दुकान से स्वयं पिकअप' : 'Store Counter Pickup') : (isHindi ? 'घर पर डिलीवरी' : 'Home Delivery')}
               </p>
             </div>
             {order.orderType === 'delivery' && (
               <div>
                 <p className="font-bold text-slate-400 uppercase tracking-wider text-[10px] mb-1">
-                  Delivery Destination
+                  {isHindi ? 'डिलीवरी का पता' : 'Delivery Destination'}
                 </p>
                 <p className="text-slate-700">{order.deliveryAddress}</p>
                 {order.landmark && (
-                  <p className="text-slate-500 mt-0.5">Landmark: {order.landmark}</p>
+                  <p className="text-slate-500 mt-0.5">{isHindi ? 'लैंडमार्क:' : 'Landmark:'} {order.landmark}</p>
                 )}
                 {order.deliveryInstructions && (
-                  <p className="text-slate-500 italic mt-0.5">Note: "{order.deliveryInstructions}"</p>
+                  <p className="text-slate-500 italic mt-0.5">{isHindi ? 'निर्देश:' : 'Note:'} "{order.deliveryInstructions}"</p>
                 )}
               </div>
             )}
@@ -156,11 +161,11 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
               <thead>
                 <tr className="border-b border-slate-200 text-slate-500 font-semibold bg-slate-50">
                   <th className="py-2.5 px-3">#</th>
-                  <th className="py-2.5 px-3">Item Description</th>
-                  <th className="py-2.5 px-3 text-center">Unit</th>
-                  <th className="py-2.5 px-3 text-right">Price</th>
-                  <th className="py-2.5 px-3 text-center">Qty</th>
-                  <th className="py-2.5 px-3 text-right">Total</th>
+                  <th className="py-2.5 px-3">{isHindi ? 'सामान का नाम' : 'Item Description'}</th>
+                  <th className="py-2.5 px-3 text-center">{isHindi ? 'इकाई' : 'Unit'}</th>
+                  <th className="py-2.5 px-3 text-right">{isHindi ? 'दर (मूल्य)' : 'Price'}</th>
+                  <th className="py-2.5 px-3 text-center">{isHindi ? 'मात्रा' : 'Qty'}</th>
+                  <th className="py-2.5 px-3 text-right">{isHindi ? 'कुल' : 'Total'}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -171,7 +176,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
                       <p className="font-bold text-slate-800">{item.productName}</p>
                       {item.variantName && (
                         <p className="text-[11px] text-emerald-700 font-medium">
-                          Variant: {item.variantName}
+                          {isHindi ? 'वेरिएंट:' : 'Variant:'} {item.variantName}
                         </p>
                       )}
                     </td>
@@ -194,12 +199,12 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
           {/* Financial Calculation Summary */}
           <div className="flex flex-col sm:flex-row justify-between items-start gap-4 pt-4 border-t border-slate-200">
             <div className="text-xs text-slate-500 max-w-xs space-y-1">
-              <p className="font-semibold text-slate-700">Payment Information:</p>
+              <p className="font-semibold text-slate-700">{isHindi ? 'भुगतान विवरण:' : 'Payment Information:'}</p>
               <p className="capitalize">
-                Method: <span className="font-bold text-slate-800">{order.paymentMethod.replace(/_/g, ' ')}</span>
+                {isHindi ? 'माध्यम:' : 'Method:'} <span className="font-bold text-slate-800">{order.paymentMethod.replace(/_/g, ' ')}</span>
               </p>
               <p className="capitalize">
-                Payment Status:{' '}
+                {isHindi ? 'भुगतान स्थिति:' : 'Payment Status:'}{' '}
                 <span
                   className={`font-bold ${
                     order.paymentStatus === 'paid' ? 'text-emerald-600' : 'text-amber-600'
@@ -217,27 +222,27 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
 
             <div className="w-full sm:w-64 space-y-1.5 text-xs text-right">
               <div className="flex justify-between text-slate-600">
-                <span>Subtotal:</span>
+                <span>{isHindi ? 'सामान मूल्य:' : 'Subtotal:'}</span>
                 <span className="font-mono font-medium">₹{Number(order.subtotal).toFixed(2)}</span>
               </div>
               {Number(order.discountAmount) > 0 && (
                 <div className="flex justify-between text-emerald-700 font-medium">
-                  <span>Discount Applied:</span>
+                  <span>{isHindi ? 'छूट / डिस्काउंट:' : 'Discount Applied:'}</span>
                   <span className="font-mono">-₹{Number(order.discountAmount).toFixed(2)}</span>
                 </div>
               )}
               <div className="flex justify-between text-slate-600">
-                <span>Delivery Charge:</span>
+                <span>{isHindi ? 'डिलीवरी शुल्क:' : 'Delivery Charge:'}</span>
                 <span className="font-mono">
-                  {Number(order.deliveryFee) === 0 ? 'FREE' : `₹${Number(order.deliveryFee).toFixed(2)}`}
+                  {Number(order.deliveryFee) === 0 ? (isHindi ? 'मुफ़्त' : 'FREE') : `₹${Number(order.deliveryFee).toFixed(2)}`}
                 </span>
               </div>
               <div className="flex justify-between text-slate-600">
-                <span>Taxes & GST:</span>
+                <span>{isHindi ? 'टैक्स व जीएसटी:' : 'Taxes & GST:'}</span>
                 <span className="font-mono">₹{Number(order.taxAmount).toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-base font-extrabold text-slate-900 border-t border-slate-300 pt-2">
-                <span>Grand Total:</span>
+                <span>{isHindi ? 'कुल देय राशि:' : 'Grand Total:'}</span>
                 <span className="font-mono text-emerald-700">₹{Number(order.totalAmount).toFixed(2)}</span>
               </div>
             </div>
@@ -245,9 +250,13 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
 
           {/* Official Footer */}
           <div className="border-t border-slate-200 pt-4 text-center text-[11px] text-slate-400 space-y-1">
-            <p>This is a computer-generated tax invoice verified on the YUNAY multi-tenant local commerce network.</p>
+            <p>
+              {isHindi
+                ? 'यह YUNAY स्थानीय व्यापार नेटवर्क पर सत्यापित कंप्यूटर जनरेटेड टैक्स इनवॉइस है।'
+                : 'This is a computer-generated tax invoice verified on the YUNAY multi-tenant local commerce network.'}
+            </p>
             <p className="font-bold text-slate-600">
-              Powered by YUNAY • Empowering Neighborhood Commerce Everywhere
+              Powered by YUNAY • {isHindi ? 'हर जगह स्थानीय व्यापार को सशक्त बनाना' : 'Empowering Neighborhood Commerce Everywhere'}
             </p>
           </div>
         </div>

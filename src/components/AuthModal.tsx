@@ -19,6 +19,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.tsx';
+import { useLanguage } from '../context/LanguageContext.tsx';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -38,6 +39,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onLoginSuccess,
 }) => {
   const { loginWithIdentifier, loginWithGoogle, registerCustomer } = useAuth();
+  const { t, isHindi, pick } = useLanguage();
 
   const [mode, setMode] = useState<'signin' | 'signup'>(initialMode);
   const [signinStep, setSigninStep] = useState<'choose' | 'customer' | 'shopkeeper' | 'admin'>('choose');
@@ -224,7 +226,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             }`}
           >
             <LogIn className="w-4 h-4 text-emerald-600" />
-            <span>Sign In (लॉगिन)</span>
+            <span>{t('auth.signin_tab', 'Sign In')}</span>
           </button>
           <button
             type="button"
@@ -241,7 +243,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             }`}
           >
             <UserPlus className="w-4 h-4 text-blue-600" />
-            <span>Sign Up (साइन अप)</span>
+            <span>{t('auth.signup_tab', 'Sign Up')}</span>
           </button>
         </div>
 
@@ -258,8 +260,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <RefreshCw className="w-4 h-4 text-rose-600" />
                 <span>
                   {errorAccountRole === 'customer'
-                    ? '👉 Switch to Customer Sign In (ग्राहक लॉगिन)'
-                    : '👉 Switch to Shop Owner Sign In (दुकानदार लॉगिन)'}
+                    ? t('auth.switch_to_customer', '👉 Switch to Customer Sign In')
+                    : t('auth.switch_to_shopkeeper', '👉 Switch to Shop Owner Sign In')}
                 </span>
               </button>
             )}
@@ -283,10 +285,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <Store className="w-7 h-7" />
               </div>
               <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight pt-1">
-                Sign In to YUNAY
+                {t('auth.signin_title', 'Sign In to YUNAY')}
               </h2>
               <p className="text-sm font-bold text-slate-600 max-w-sm mx-auto">
-                Choose your account type to sign in (अपना खाता प्रकार चुनें)
+                {t('auth.choose_role_signin', 'Choose your account type to sign in')}
               </p>
             </div>
 
@@ -302,16 +304,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-base font-black text-slate-900">Shop Owner</h3>
+                      <h3 className="text-base font-black text-slate-900">
+                        {t('auth.shopkeeper_title', 'Shop Owner')}
+                      </h3>
                       <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-black uppercase">
-                        दुकानदार
+                        {t('auth.shopkeeper_badge', 'Shop Owner')}
                       </span>
                     </div>
                     <p className="text-sm font-semibold text-slate-600 mt-1 leading-relaxed">
-                      Sign in to manage your shop, view customer orders, update catalog, and track sales.
+                      {t('auth.shopkeeper_signin_desc', 'Sign in to manage your shop, view customer orders, update catalog, and track sales.')}
                     </p>
                     <div className="mt-3 flex items-center gap-1.5 text-sm font-black text-emerald-700 group-hover:translate-x-1 transition">
-                      <span>Sign In as Shop Owner (दुकानदार लॉगिन)</span>
+                      <span>{t('auth.shopkeeper_signin_btn', 'Sign In as Shop Owner')}</span>
                       <ArrowRight className="w-4 h-4" />
                     </div>
                   </div>
@@ -329,16 +333,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-base font-black text-slate-900">Customer</h3>
+                      <h3 className="text-base font-black text-slate-900">
+                        {t('auth.customer_title', 'Customer')}
+                      </h3>
                       <span className="px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 text-xs font-black uppercase">
-                        ग्राहक
+                        {t('auth.customer_badge', 'Customer')}
                       </span>
                     </div>
                     <p className="text-sm font-semibold text-slate-600 mt-1 leading-relaxed">
-                      Sign in to browse local stores, track pending deliveries, and manage your cart.
+                      {t('auth.customer_signin_desc', 'Sign in to browse local stores, track pending deliveries, and manage your cart.')}
                     </p>
                     <div className="mt-3 flex items-center gap-1.5 text-sm font-black text-blue-700 group-hover:translate-x-1 transition">
-                      <span>Sign In as Customer (ग्राहक लॉगिन)</span>
+                      <span>{t('auth.customer_signin_btn', 'Sign In as Customer')}</span>
                       <ArrowRight className="w-4 h-4" />
                     </div>
                   </div>
@@ -355,8 +361,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     <ShieldCheck className="w-5 h-5" />
                   </div>
                   <div>
-                    <h4 className="text-sm font-black text-slate-900">Platform Administrator</h4>
-                    <p className="text-xs font-bold text-slate-500">Master console for authorized administrators</p>
+                    <h4 className="text-sm font-black text-slate-900">
+                      {t('auth.admin_title', 'Platform Administrator')}
+                    </h4>
+                    <p className="text-xs font-bold text-slate-500">
+                      {t('auth.admin_desc', 'Master console for authorized administrators')}
+                    </p>
                   </div>
                 </div>
                 <ArrowRight className="w-5 h-5 text-purple-600" />
@@ -447,9 +457,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             <div className="text-left space-y-1">
               <div className="flex items-center gap-2.5">
                 <h3 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                  {signinStep === 'shopkeeper' && 'Shop Owner Sign In'}
-                  {signinStep === 'customer' && 'Customer Sign In'}
-                  {signinStep === 'admin' && 'Platform Admin Sign In'}
+                  {signinStep === 'shopkeeper' && (isHindi ? 'दुकानदार लॉगिन' : 'Shop Owner Sign In')}
+                  {signinStep === 'customer' && (isHindi ? 'ग्राहक लॉगिन' : 'Customer Sign In')}
+                  {signinStep === 'admin' && (isHindi ? 'प्लेटफ़ॉर्म एडमिन लॉगिन' : 'Platform Admin Sign In')}
                 </h3>
                 <span
                   className={`text-xs font-black uppercase px-2.5 py-0.5 rounded-full ${
@@ -460,18 +470,24 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       : 'bg-purple-100 text-purple-800'
                   }`}
                 >
-                  {signinStep === 'shopkeeper' && 'दुकानदार'}
-                  {signinStep === 'customer' && 'ग्राहक'}
-                  {signinStep === 'admin' && 'एडमिन'}
+                  {signinStep === 'shopkeeper' && (isHindi ? 'दुकानदार' : 'Shop Owner')}
+                  {signinStep === 'customer' && (isHindi ? 'ग्राहक' : 'Customer')}
+                  {signinStep === 'admin' && (isHindi ? 'एडमिन' : 'Admin')}
                 </span>
               </div>
               <p className="text-sm font-bold text-slate-600">
                 {signinStep === 'shopkeeper' &&
-                  'Enter your registered merchant mobile or email to access your shop.'}
+                  (isHindi
+                    ? 'अपनी दुकान तक पहुंचने के लिए पंजीकृत मोबाइल या ईमेल दर्ज करें।'
+                    : 'Enter your registered merchant mobile or email to access your shop.')}
                 {signinStep === 'customer' &&
-                  'Enter your mobile or email to view orders and shop from local stores.'}
+                  (isHindi
+                    ? 'ऑर्डर देखने और स्थानीय दुकानों से खरीदारी के लिए अपना मोबाइल या ईमेल दर्ज करें।'
+                    : 'Enter your mobile or email to view orders and shop from local stores.')}
                 {signinStep === 'admin' &&
-                  'Master admin console for shop moderation and platform control.'}
+                  (isHindi
+                    ? 'दुकान नियंत्रण और प्लेटफ़ॉर्म संचालन के लिए मास्टर कंसोल।'
+                    : 'Master admin console for shop moderation and platform control.')}
               </p>
             </div>
 
@@ -480,10 +496,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <div>
                 <label className="block text-sm font-black text-slate-800 mb-1.5">
                   {signinStep === 'admin'
-                    ? 'Admin ID'
+                    ? (isHindi ? 'एडमिन आईडी' : 'Admin ID')
                     : signinStep === 'shopkeeper'
-                    ? 'Shop Mobile Number or Email *'
-                    : 'Customer Mobile Number or Email *'}
+                    ? (isHindi ? 'दुकानदार मोबाइल नंबर या ईमेल *' : 'Shop Mobile Number or Email *')
+                    : (isHindi ? 'ग्राहक मोबाइल नंबर या ईमेल *' : 'Customer Mobile Number or Email *')}
                 </label>
                 <div className="relative">
                   <input
@@ -491,7 +507,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     required
                     placeholder={
                       signinStep === 'admin'
-                        ? 'Enter Admin ID'
+                        ? (isHindi ? 'एडमिन आईडी दर्ज करें' : 'Enter Admin ID')
                         : signinStep === 'shopkeeper'
                         ? 'e.g. 98765 43210 or store@example.com'
                         : 'e.g. 98765 43210 or you@example.com'
@@ -513,14 +529,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="block text-sm font-black text-slate-800">
-                    Password (पासवर्ड) *
+                    {t('auth.password_label', 'Password')} *
                   </label>
                 </div>
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}
                     required
-                    placeholder={signinStep === 'admin' ? 'Enter password' : 'Enter your password'}
+                    placeholder={signinStep === 'admin' ? 'Enter password' : (isHindi ? 'पासवर्ड दर्ज करें' : 'Enter your password')}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="w-full pl-11 pr-11 py-3 bg-slate-50 focus:bg-white rounded-2xl text-base font-bold text-slate-900 border-2 border-slate-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/15 outline-none transition placeholder:text-slate-400 placeholder:font-bold shadow-2xs"
@@ -553,9 +569,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 ) : (
                   <>
                     <span>
-                      {signinStep === 'shopkeeper' && 'Sign In as Shop Owner (दुकानदार लॉगिन)'}
-                      {signinStep === 'customer' && 'Sign In as Customer (ग्राहक लॉगिन)'}
-                      {signinStep === 'admin' && 'Sign In as Administrator'}
+                      {signinStep === 'shopkeeper' && t('auth.shopkeeper_signin_btn', 'Sign In as Shop Owner')}
+                      {signinStep === 'customer' && t('auth.customer_signin_btn', 'Sign In as Customer')}
+                      {signinStep === 'admin' && (isHindi ? 'एडमिन के रूप में लॉग इन करें' : 'Sign In as Administrator')}
                     </span>
                     <ArrowRight className="w-5 h-5" />
                   </>
@@ -601,7 +617,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             <div className="text-center pt-3 border-t border-slate-100">
               {signinStep === 'shopkeeper' ? (
                 <p className="text-sm font-bold text-slate-600">
-                  Don't have a shop account yet?{' '}
+                  {isHindi ? 'क्या अभी तक दुकान का खाता नहीं है?' : "Don't have a shop account yet?"}{' '}
                   <button
                     type="button"
                     onClick={() => {
@@ -610,12 +626,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     }}
                     className="font-black text-emerald-600 hover:text-emerald-700 underline transition cursor-pointer text-sm"
                   >
-                    Register Your Shop (नया दुकानदार साइन अप)
+                    {isHindi ? 'अपनी दुकान जोड़ें' : 'Register Your Shop'}
                   </button>
                 </p>
               ) : signinStep === 'customer' ? (
                 <p className="text-sm font-bold text-slate-600">
-                  New customer?{' '}
+                  {isHindi ? 'नए ग्राहक हैं?' : 'New customer?'}{' '}
                   <button
                     type="button"
                     onClick={() => {
@@ -625,12 +641,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     }}
                     className="font-black text-blue-600 hover:text-blue-700 underline transition cursor-pointer text-sm"
                   >
-                    Create Customer Account (साइन अप करें)
+                    {isHindi ? 'ग्राहक खाता बनाएं' : 'Create Customer Account'}
                   </button>
                 </p>
               ) : (
                 <p className="text-sm font-bold text-slate-400">
-                  Platform administration console
+                  {isHindi ? 'प्लेटफ़ॉर्म प्रशासन कंसोल' : 'Platform administration console'}
                 </p>
               )}
             </div>
@@ -647,10 +663,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <Sparkles className="w-7 h-7" />
               </div>
               <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight pt-1">
-                Create your YUNAY account
+                {t('auth.signup_title', 'Create your YUNAY account')}
               </h2>
               <p className="text-sm font-bold text-slate-600">
-                Select how you would like to use YUNAY to continue (अपना खाता चुनें)
+                {t('auth.choose_role_signup', 'Select your account type to register')}
               </p>
             </div>
 
@@ -669,16 +685,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-base font-black text-slate-900">Shop Owner</h3>
+                      <h3 className="text-base font-black text-slate-900">
+                        {t('auth.shopkeeper_title', 'Shop Owner')}
+                      </h3>
                       <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-black uppercase">
-                        दुकानदार • Sell Local
+                        {isHindi ? 'दुकानदार • स्थानीय बिक्री' : 'Shop Owner • Sell Local'}
                       </span>
                     </div>
                     <p className="text-sm font-semibold text-slate-600 mt-1 leading-relaxed">
-                      Create your digital storefront, set password, upload products, and accept local customer orders.
+                      {isHindi
+                        ? 'अपना डिजिटल स्टोरफ्रंट बनाएं, उत्पाद अपलोड करें और सीधे ग्राहकों से ऑर्डर स्वीकार करें।'
+                        : 'Create your digital storefront, upload products, and accept local customer orders.'}
                     </p>
                     <div className="mt-3 flex items-center gap-1.5 text-sm font-black text-emerald-700 group-hover:translate-x-1 transition">
-                      <span>Sign Up as Shop Owner (दुकानदार खाता बनाएं)</span>
+                      <span>{isHindi ? 'दुकानदार खाता बनाएं' : 'Sign Up as Shop Owner'}</span>
                       <ArrowRight className="w-4 h-4" />
                     </div>
                   </div>
@@ -699,16 +719,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-base font-black text-slate-900">Customer</h3>
+                      <h3 className="text-base font-black text-slate-900">
+                        {t('auth.customer_title', 'Customer')}
+                      </h3>
                       <span className="px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 text-xs font-black uppercase">
-                        ग्राहक • Shop & Order
+                        {isHindi ? 'ग्राहक • खरीदारी व ऑर्डर' : 'Customer • Shop & Order'}
                       </span>
                     </div>
                     <p className="text-sm font-semibold text-slate-600 mt-1 leading-relaxed">
-                      Shop from neighborhood stores, discover local products, and order for direct delivery or pickup.
+                      {isHindi
+                        ? 'आस-पास की दुकानों से खरीदारी करें, ताज़ा सामान खोजें और सीधे डिलीवरी पाएं।'
+                        : 'Shop from neighborhood stores, discover local products, and order for direct delivery.'}
                     </p>
                     <div className="mt-3 flex items-center gap-1.5 text-sm font-black text-blue-700 group-hover:translate-x-1 transition">
-                      <span>Sign Up as Customer (ग्राहक खाता बनाएं)</span>
+                      <span>{isHindi ? 'ग्राहक खाता बनाएं' : 'Sign Up as Customer'}</span>
                       <ArrowRight className="w-4 h-4" />
                     </div>
                   </div>
@@ -718,7 +742,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
             <div className="text-center pt-3 border-t border-slate-100">
               <p className="text-sm font-bold text-slate-600">
-                Already have an account?{' '}
+                {isHindi ? 'पहले से खाता है?' : 'Already have an account?'}{' '}
                 <button
                   type="button"
                   onClick={() => {
@@ -728,7 +752,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   }}
                   className="font-black text-emerald-600 hover:text-emerald-700 underline transition cursor-pointer text-sm"
                 >
-                  Sign In (लॉगिन करें)
+                  {t('auth.signin_tab', 'Sign In')}
                 </button>
               </p>
             </div>
@@ -750,10 +774,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </button>
               <div>
                 <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                  Customer Registration (ग्राहक खाता)
+                  {isHindi ? 'ग्राहक पंजीकरण' : 'Customer Registration'}
                 </h2>
                 <p className="text-xs font-bold text-slate-500">
-                  Shop from verified neighborhood stores
+                  {isHindi ? 'सत्यापित स्थानीय दुकानों से खरीदारी करें' : 'Shop from verified neighborhood stores'}
                 </p>
               </div>
             </div>
@@ -761,13 +785,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             <form onSubmit={handleCustomerSignUp} className="space-y-3.5 pt-1">
               <div>
                 <label className="block text-sm font-black text-slate-800 mb-1.5">
-                  Full Name (पूरा नाम) *
+                  {t('auth.name_label', 'Full Name')} *
                 </label>
                 <div className="relative">
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Rahul Sharma"
+                    placeholder={isHindi ? 'उदा. राहुल शर्मा' : 'e.g. Rahul Sharma'}
                     value={regName}
                     onChange={(e) => setRegName(e.target.value)}
                     className="w-full pl-11 pr-4 py-3 bg-slate-50 focus:bg-white rounded-2xl text-base font-bold text-slate-900 border-2 border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 outline-none transition placeholder:text-slate-400 placeholder:font-bold shadow-2xs"
@@ -778,7 +802,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
               <div>
                 <label className="block text-sm font-black text-slate-800 mb-1.5">
-                  Mobile Number (मोबाइल नंबर) *
+                  {t('auth.phone_label', 'Mobile Number')} *
                 </label>
                 <div className="relative">
                   <input
@@ -795,7 +819,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
               <div>
                 <label className="block text-sm font-black text-slate-800 mb-1.5">
-                  Email Address <span className="text-slate-400 font-semibold">(optional)</span>
+                  {isHindi ? 'ईमेल आईडी' : 'Email Address'} <span className="text-slate-400 font-semibold">{isHindi ? '(ऐच्छिक)' : '(optional)'}</span>
                 </label>
                 <div className="relative">
                   <input
@@ -812,7 +836,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-black text-slate-800 mb-1.5">
-                    Password *
+                    {t('auth.password_label', 'Password')} *
                   </label>
                   <div className="relative">
                     <input
@@ -837,7 +861,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
                 <div>
                   <label className="block text-sm font-black text-slate-800 mb-1.5">
-                    Confirm Password *
+                    {isHindi ? 'पासवर्ड पुष्टि *' : 'Confirm Password *'}
                   </label>
                   <div className="relative">
                     <input
@@ -870,7 +894,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   <div className="w-5 h-5 border-3 border-white border-t-transparent rounded-full animate-spin" />
                 ) : (
                   <>
-                    <span>Create Customer Account (खाता बनाएं)</span>
+                    <span>{t('auth.submit_signup', 'Create Customer Account')}</span>
                     <ArrowRight className="w-5 h-5" />
                   </>
                 )}
@@ -879,7 +903,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
             <div className="text-center pt-3 border-t border-slate-100">
               <p className="text-sm font-bold text-slate-600">
-                Already have an account?{' '}
+                {isHindi ? 'पहले से खाता है?' : 'Already have an account?'}{' '}
                 <button
                   type="button"
                   onClick={() => {
@@ -889,7 +913,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   }}
                   className="font-black text-blue-600 hover:text-blue-700 underline transition cursor-pointer text-sm"
                 >
-                  Sign In (ग्राहक लॉगिन)
+                  {t('auth.signin_tab', 'Sign In')}
                 </button>
               </p>
             </div>

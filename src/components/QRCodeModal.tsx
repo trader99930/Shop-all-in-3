@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import QRCode from 'qrcode';
 import { Shop } from '../types/index.ts';
+import { useLanguage } from '../context/LanguageContext.tsx';
 
 interface QRCodeModalProps {
   isOpen?: boolean;
@@ -45,6 +46,7 @@ export const QRCodeModal: React.FC<QRCodeModalProps> = ({
   const [upiRef, setUpiRef] = useState('');
   const [confirming, setConfirming] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const { isHindi } = useLanguage();
 
   const numAmount = Number(amount) || 0;
   const isPaymentMode = mode === 'payment' || numAmount > 0;
@@ -177,7 +179,7 @@ export const QRCodeModal: React.FC<QRCodeModalProps> = ({
             {/* Header Badge */}
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-black">
               <CreditCard className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Direct Vendor UPI Payment (सीधा दुकानदार को भुगतान)</span>
+              <span>{isHindi ? 'सीधा दुकानदार को UPI भुगतान' : 'Direct Vendor UPI Payment'}</span>
             </div>
 
             {/* Shop Details */}
@@ -202,7 +204,7 @@ export const QRCodeModal: React.FC<QRCodeModalProps> = ({
             {/* Exact Amount Banner */}
             <div className="p-3.5 bg-gradient-to-br from-emerald-600 via-teal-600 to-emerald-700 rounded-2xl text-white shadow-md shadow-emerald-600/20">
               <p className="text-[11px] font-bold text-emerald-100 uppercase tracking-wider">
-                Total Amount to Pay (कुल देय राशि)
+                {isHindi ? 'कुल देय राशि' : 'Total Amount to Pay'}
               </p>
               <div className="text-3xl font-black font-mono tracking-tight mt-0.5">
                 ₹{numAmount.toFixed(2)}
@@ -214,7 +216,9 @@ export const QRCodeModal: React.FC<QRCodeModalProps> = ({
               {loading ? (
                 <div className="w-52 h-52 flex flex-col items-center justify-center text-slate-400 gap-2">
                   <div className="w-8 h-8 border-3 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
-                  <span className="text-[11px] font-medium">Generating UPI QR...</span>
+                  <span className="text-[11px] font-medium">
+                    {isHindi ? 'UPI QR कोड तैयार हो रहा है...' : 'Generating UPI QR...'}
+                  </span>
                 </div>
               ) : qrDataUrl ? (
                 <div className="space-y-1">
@@ -225,12 +229,12 @@ export const QRCodeModal: React.FC<QRCodeModalProps> = ({
                   />
                   <div className="flex items-center justify-center gap-1.5 text-[10px] font-black text-slate-700">
                     <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>Scan with Any UPI App</span>
+                    <span>{isHindi ? 'किसी भी UPI ऐप से स्कैन करें' : 'Scan with Any UPI App'}</span>
                   </div>
                 </div>
               ) : (
                 <div className="w-52 h-52 flex items-center justify-center text-rose-500 text-xs">
-                  {errorMsg || 'Failed to render QR code'}
+                  {errorMsg || (isHindi ? 'QR कोड लोड नहीं हो सका' : 'Failed to render QR code')}
                 </div>
               )}
             </div>
@@ -238,7 +242,7 @@ export const QRCodeModal: React.FC<QRCodeModalProps> = ({
             {/* Vendor UPI ID Display with Copy Button */}
             <div className="bg-slate-50 p-2.5 rounded-2xl border border-slate-200 text-left space-y-1">
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
-                Payee UPI ID (दुकानदार की UPI आईडी):
+                {isHindi ? 'दुकानदार की UPI आईडी:' : 'Payee UPI ID:'}
               </span>
               <div className="flex items-center justify-between gap-2 bg-white px-3 py-1.5 rounded-xl border border-slate-200">
                 <span className="font-mono text-xs font-black text-slate-800 truncate">
@@ -252,12 +256,12 @@ export const QRCodeModal: React.FC<QRCodeModalProps> = ({
                   {copiedUpi ? (
                     <>
                       <Check className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>Copied</span>
+                      <span>{isHindi ? 'कॉपी हो गया' : 'Copied'}</span>
                     </>
                   ) : (
                     <>
                       <Copy className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>Copy</span>
+                      <span>{isHindi ? 'कॉपी करें' : 'Copy'}</span>
                     </>
                   )}
                 </button>
@@ -270,25 +274,27 @@ export const QRCodeModal: React.FC<QRCodeModalProps> = ({
               className="sm:hidden flex items-center justify-center gap-2 w-full py-2.5 px-4 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-xl text-xs font-bold transition shadow-xs"
             >
               <Smartphone className="w-4 h-4 text-emerald-700" />
-              <span>Click to Open UPI App on This Phone</span>
+              <span>{isHindi ? 'इस फोन पर UPI ऐप खोलें' : 'Click to Open UPI App on This Phone'}</span>
               <ExternalLink className="w-3 h-3 text-emerald-700" />
             </a>
 
             {/* Optional UTR / Reference Number Input */}
             <div className="text-left space-y-1 pt-1">
               <label className="text-xs font-bold text-slate-700 block">
-                UPI Reference / UTR Number (12 डिजिट UTR नंबर - ऐच्छिक)
+                {isHindi ? 'UPI संदर्भ / UTR नंबर (12 अंकों का UTR - ऐच्छिक)' : 'UPI Reference / UTR Number (12-digit UTR - Optional)'}
               </label>
               <input
                 type="text"
-                placeholder="e.g. 429104829102"
+                placeholder={isHindi ? 'उदा. 429104829102' : 'e.g. 429104829102'}
                 value={upiRef}
                 onChange={(e) => setUpiRef(e.target.value)}
                 maxLength={20}
                 className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono focus:bg-white focus:outline-none focus:border-emerald-500 font-semibold"
               />
               <p className="text-[10px] text-slate-500">
-                After scanning & completing the payment, click the button below to confirm your order.
+                {isHindi
+                  ? 'भुगतान पूरा करने के बाद, अपना ऑर्डर कन्फर्म करने के लिए नीचे दिए बटन पर क्लिक करें।'
+                  : 'After scanning & completing the payment, click the button below to confirm your order.'}
               </p>
             </div>
 
@@ -299,7 +305,7 @@ export const QRCodeModal: React.FC<QRCodeModalProps> = ({
                 onClick={onClose}
                 className="flex-1 py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition cursor-pointer"
               >
-                Cancel
+                {isHindi ? 'रद्द करें' : 'Cancel'}
               </button>
               <button
                 type="button"
@@ -312,7 +318,7 @@ export const QRCodeModal: React.FC<QRCodeModalProps> = ({
                 ) : (
                   <>
                     <CheckCircle2 className="w-4 h-4" />
-                    <span>I Have Paid • Confirm Order</span>
+                    <span>{isHindi ? 'मैंने भुगतान कर दिया • ऑर्डर कन्फर्म करें' : 'I Have Paid • Confirm Order'}</span>
                   </>
                 )}
               </button>
@@ -325,7 +331,7 @@ export const QRCodeModal: React.FC<QRCodeModalProps> = ({
           <div className="space-y-4">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold">
               <Award className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Powered by YUNAY</span>
+              <span>{isHindi ? 'YUNAY द्वारा संचालित' : 'Powered by YUNAY'}</span>
             </div>
 
             <div className="flex flex-col items-center">
@@ -359,16 +365,20 @@ export const QRCodeModal: React.FC<QRCodeModalProps> = ({
                   className="w-56 h-56 mx-auto rounded-lg shadow-xs"
                 />
               ) : (
-                <p className="text-xs text-slate-400">Failed to generate QR code</p>
+                <p className="text-xs text-slate-400">
+                  {isHindi ? 'QR कोड लोड नहीं हो सका' : 'Failed to generate QR code'}
+                </p>
               )}
             </div>
 
             <div>
               <p className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                Scan with Phone Camera or Any UPI Scanner
+                {isHindi ? 'फोन कैमरा या किसी भी UPI स्कैनर से स्कैन करें' : 'Scan with Phone Camera or Any UPI Scanner'}
               </p>
               <p className="text-[11px] text-slate-500 mt-0.5">
-                Browse products, check stock, and order directly for delivery or pickup
+                {isHindi
+                  ? 'सामान देखें, स्टॉक चेक करें और सीधे डिलीवरी या पिकअप के लिए ऑर्डर करें'
+                  : 'Browse products, check stock, and order directly for delivery or pickup'}
               </p>
             </div>
 
@@ -378,7 +388,7 @@ export const QRCodeModal: React.FC<QRCodeModalProps> = ({
               <button
                 onClick={handleCopyUrl}
                 className="p-1 text-emerald-700 hover:text-emerald-900 hover:bg-white rounded transition cursor-pointer"
-                title="Copy Store URL"
+                title={isHindi ? 'दुकान का लिंक कॉपी करें' : 'Copy Store URL'}
               >
                 {copiedUrl ? (
                   <Check className="w-4 h-4 text-emerald-600" />
@@ -395,7 +405,7 @@ export const QRCodeModal: React.FC<QRCodeModalProps> = ({
                 className="flex items-center justify-center gap-1.5 py-2.5 px-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer"
               >
                 <Download className="w-3.5 h-3.5" />
-                <span>Download QR</span>
+                <span>{isHindi ? 'QR कोड डाउनलोड करें' : 'Download QR'}</span>
               </button>
 
               <button
@@ -403,7 +413,7 @@ export const QRCodeModal: React.FC<QRCodeModalProps> = ({
                 className="flex items-center justify-center gap-1.5 py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer"
               >
                 <Printer className="w-3.5 h-3.5" />
-                <span>Print Standee</span>
+                <span>{isHindi ? 'स्टेंडी प्रिंट करें' : 'Print Standee'}</span>
               </button>
             </div>
           </div>

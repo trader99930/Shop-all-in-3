@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useCart } from '../context/CartContext.tsx';
 import { useAuth } from '../context/AuthContext.tsx';
+import { useLanguage } from '../context/LanguageContext.tsx';
 import { Order } from '../types/index.ts';
 import { QRCodeModal } from './QRCodeModal.tsx';
 
@@ -28,6 +29,7 @@ interface CartDrawerProps {
 
 export const CartDrawer: React.FC<CartDrawerProps> = ({ onOrderPlaced }) => {
   const { currentUser, getAuthHeaders } = useAuth();
+  const { t, isHindi } = useLanguage();
   const {
     items,
     cartShop,
@@ -174,25 +176,36 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOrderPlaced }) => {
             <div className="w-12 h-12 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mx-auto mb-4">
               <AlertTriangle className="w-6 h-6" />
             </div>
-            <h3 className="text-lg font-bold text-slate-900">Replace items in cart?</h3>
+            <h3 className="text-lg font-bold text-slate-900">
+              {isHindi ? 'कार्ट का सामान बदलें?' : 'Replace items in cart?'}
+            </h3>
             <p className="text-xs text-slate-600 mt-2 leading-relaxed">
-              Your cart currently contains items from{' '}
-              <strong className="text-slate-800">{cartShop?.name}</strong>. YUNAY orders are fulfilled directly by individual local shops. Would you like to clear your current cart and switch to{' '}
-              <strong className="text-emerald-700">{conflict.pendingShop?.name}</strong>?
+              {isHindi ? (
+                <>
+                  आपकी कार्ट में अभी <strong className="text-slate-800">{cartShop?.name}</strong> का सामान है। YUNAY ऑर्डर स्थानीय दुकानों द्वारा सीधे पूरे किए जाते हैं। क्या आप वर्तमान कार्ट खाली करके{' '}
+                  <strong className="text-emerald-700">{conflict.pendingShop?.name}</strong> पर स्विच करना चाहते हैं?
+                </>
+              ) : (
+                <>
+                  Your cart currently contains items from{' '}
+                  <strong className="text-slate-800">{cartShop?.name}</strong>. YUNAY orders are fulfilled directly by individual local shops. Would you like to clear your current cart and switch to{' '}
+                  <strong className="text-emerald-700">{conflict.pendingShop?.name}</strong>?
+                </>
+              )}
             </p>
 
             <div className="mt-6 flex flex-col sm:flex-row gap-3">
               <button
                 onClick={() => resolveConflict(false)}
-                className="flex-1 py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition"
+                className="flex-1 py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
               >
-                Keep Current Cart
+                {isHindi ? 'पुरानी कार्ट रखें' : 'Keep Current Cart'}
               </button>
               <button
                 onClick={() => resolveConflict(true)}
-                className="flex-1 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition shadow-sm"
+                className="flex-1 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition shadow-sm cursor-pointer"
               >
-                Clear & Switch Shop
+                {isHindi ? 'खाली करें और नई दुकान चुनें' : 'Clear & Switch Shop'}
               </button>
             </div>
           </div>
@@ -220,7 +233,9 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOrderPlaced }) => {
           <div className="flex items-center gap-2">
             <ShoppingCart className="w-5 h-5 text-emerald-600" />
             <h2 className="text-base font-bold text-slate-900">
-              {isCheckingOut ? 'Checkout Order' : 'Your Shopping Cart'}
+              {isCheckingOut
+                ? isHindi ? 'ऑर्डर चेकआउट' : 'Checkout Order'
+                : isHindi ? 'आपकी शॉपिंग कार्ट' : 'Your Shopping Cart'}
             </h2>
           </div>
           <button
@@ -228,7 +243,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOrderPlaced }) => {
               setIsCartOpen(false);
               setIsCheckingOut(false);
             }}
-            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200 rounded-lg transition"
+            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200 rounded-lg transition cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -242,15 +257,19 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOrderPlaced }) => {
                 <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-3">
                   <ShoppingCart className="w-8 h-8" />
                 </div>
-                <h3 className="text-base font-bold text-slate-800">Your cart is empty</h3>
+                <h3 className="text-base font-bold text-slate-800">
+                  {isHindi ? 'आपकी कार्ट खाली है' : 'Your cart is empty'}
+                </h3>
                 <p className="text-xs text-slate-500 mt-1 max-w-xs mx-auto">
-                  Browse products from neighborhood stores and add items to your cart.
+                  {isHindi
+                    ? 'स्थानीय दुकानों से ताज़ा सामान खोजें और कार्ट में जोड़ें।'
+                    : 'Browse products from neighborhood stores and add items to your cart.'}
                 </p>
                 <button
                   onClick={() => setIsCartOpen(false)}
-                  className="mt-5 px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition"
+                  className="mt-5 px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition cursor-pointer"
                 >
-                  Start Shopping
+                  {isHindi ? 'खरीदारी शुरू करें' : 'Start Shopping'}
                 </button>
               </div>
             ) : (
@@ -269,9 +288,9 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOrderPlaced }) => {
                     </div>
                     <button
                       onClick={clearCart}
-                      className="text-[11px] text-rose-600 hover:text-rose-700 font-semibold"
+                      className="text-[11px] text-rose-600 hover:text-rose-700 font-semibold cursor-pointer"
                     >
-                      Clear
+                      {isHindi ? 'साफ़ करें' : 'Clear'}
                     </button>
                   </div>
                 )}
@@ -281,18 +300,18 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOrderPlaced }) => {
                   <div className="space-y-1.5 text-xs bg-slate-50 p-3 rounded-xl border border-slate-100">
                     {subtotal < minOrderAmount ? (
                       <div className="text-amber-700 flex items-center justify-between text-[11px] font-semibold">
-                        <span>Min. Order Requirement:</span>
-                        <span>₹{minOrderAmount} (Add ₹{minOrderAmount - subtotal} more)</span>
+                        <span>{isHindi ? 'न्यूनतम ऑर्डर सीमा:' : 'Min. Order Requirement:'}</span>
+                        <span>₹{minOrderAmount} ({isHindi ? `₹${minOrderAmount - subtotal} और जोड़ें` : `Add ₹${minOrderAmount - subtotal} more`})</span>
                       </div>
                     ) : subtotal < freeDeliveryThreshold ? (
                       <div className="text-emerald-700 flex items-center justify-between text-[11px] font-semibold">
-                        <span>Free Delivery Progress:</span>
-                        <span>Add ₹{freeDeliveryThreshold - subtotal} for FREE Delivery</span>
+                        <span>{isHindi ? 'मुफ़्त डिलीवरी प्रगति:' : 'Free Delivery Progress:'}</span>
+                        <span>{isHindi ? `मुफ़्त डिलीवरी के लिए ₹${freeDeliveryThreshold - subtotal} का सामान और जोड़ें` : `Add ₹${freeDeliveryThreshold - subtotal} for FREE Delivery`}</span>
                       </div>
                     ) : (
                       <div className="text-emerald-700 flex items-center gap-1.5 text-[11px] font-bold">
                         <CheckCircle className="w-3.5 h-3.5" />
-                        <span>You unlocked FREE local delivery!</span>
+                        <span>{isHindi ? '🎉 आपको मुफ़्त स्थानीय डिलीवरी मिल गई!' : 'You unlocked FREE local delivery!'}</span>
                       </div>
                     )}
                     <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
@@ -321,7 +340,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOrderPlaced }) => {
                         </h4>
                         {item.variant && (
                           <span className="text-[10px] text-emerald-700 font-semibold block">
-                            Variant: {item.variant.name}
+                            {isHindi ? 'वेरिएंट:' : 'Variant:'} {item.variant.name}
                           </span>
                         )}
                         <p className="text-[11px] text-slate-500 font-mono">
@@ -333,7 +352,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOrderPlaced }) => {
                         <div className="flex items-center border border-slate-200 rounded-lg overflow-hidden bg-slate-50">
                           <button
                             onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                            className="p-1 hover:bg-slate-200 text-slate-600 transition"
+                            className="p-1 hover:bg-slate-200 text-slate-600 transition cursor-pointer"
                           >
                             <Minus className="w-3 h-3" />
                           </button>
@@ -342,14 +361,14 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOrderPlaced }) => {
                           </span>
                           <button
                             onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                            className="p-1 hover:bg-slate-200 text-slate-600 transition"
+                            className="p-1 hover:bg-slate-200 text-slate-600 transition cursor-pointer"
                           >
                             <Plus className="w-3 h-3" />
                           </button>
                         </div>
                         <button
                           onClick={() => removeFromCart(item.id)}
-                          className="p-1 text-slate-400 hover:text-rose-600 transition"
+                          className="p-1 text-slate-400 hover:text-rose-600 transition cursor-pointer"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -364,29 +383,33 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOrderPlaced }) => {
                     <div className="flex items-center justify-between p-2.5 bg-emerald-50 rounded-xl border border-emerald-200 text-xs">
                       <div className="flex items-center gap-1.5 text-emerald-800 font-semibold">
                         <Tag className="w-4 h-4 text-emerald-600" />
-                        <span>Code "{appliedCoupon.code}" applied (-₹{discountAmount})</span>
+                        <span>
+                          {isHindi
+                            ? `कूपन "${appliedCoupon.code}" लागू हुआ (-₹${discountAmount})`
+                            : `Code "${appliedCoupon.code}" applied (-₹${discountAmount})`}
+                        </span>
                       </div>
                       <button
                         onClick={removeCoupon}
-                        className="text-rose-600 font-bold hover:underline text-[11px]"
+                        className="text-rose-600 font-bold hover:underline text-[11px] cursor-pointer"
                       >
-                        Remove
+                        {isHindi ? 'हटाएं' : 'Remove'}
                       </button>
                     </div>
                   ) : (
                     <div className="flex gap-2">
                       <input
                         type="text"
-                        placeholder="Coupon / Promo Code"
+                        placeholder={isHindi ? 'कूपन / प्रोमो कोड' : 'Coupon / Promo Code'}
                         value={couponInput}
                         onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
-                        className="flex-1 px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl uppercase font-mono tracking-wider focus:outline-none focus:border-emerald-500"
+                        className="flex-1 px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl uppercase font-mono tracking-wider focus:outline-none focus:border-emerald-500 font-bold"
                       />
                       <button
                         onClick={handleApplyCoupon}
-                        className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition"
+                        className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition cursor-pointer"
                       >
-                        Apply
+                        {isHindi ? 'लागू करें' : 'Apply'}
                       </button>
                     </div>
                   )}
@@ -401,23 +424,23 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOrderPlaced }) => {
               <div className="pt-4 border-t border-slate-100 space-y-2 mt-4">
                 <div className="space-y-1 text-xs text-slate-600">
                   <div className="flex justify-between">
-                    <span>Subtotal</span>
+                    <span>{isHindi ? 'उप-कुल (सामान मूल्य)' : 'Subtotal'}</span>
                     <span className="font-mono">₹{subtotal.toFixed(2)}</span>
                   </div>
                   {discountAmount > 0 && (
                     <div className="flex justify-between text-emerald-600 font-semibold">
-                      <span>Discount</span>
+                      <span>{isHindi ? 'छूट / डिस्काउंट' : 'Discount'}</span>
                       <span className="font-mono">-₹{discountAmount.toFixed(2)}</span>
                     </div>
                   )}
                   <div className="flex justify-between">
-                    <span>Delivery Fee</span>
+                    <span>{isHindi ? 'डिलीवरी शुल्क' : 'Delivery Fee'}</span>
                     <span className="font-mono">
-                      {deliveryFee === 0 ? 'FREE' : `₹${deliveryFee.toFixed(2)}`}
+                      {deliveryFee === 0 ? (isHindi ? 'मुफ़्त' : 'FREE') : `₹${deliveryFee.toFixed(2)}`}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm font-extrabold text-slate-900 pt-1 border-t border-slate-200">
-                    <span>Final Total</span>
+                    <span>{isHindi ? 'कुल देय राशि' : 'Final Total'}</span>
                     <span className="font-mono text-emerald-700">₹{finalTotal.toFixed(2)}</span>
                   </div>
                 </div>
@@ -425,18 +448,20 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOrderPlaced }) => {
                 <button
                   disabled={!canCheckout}
                   onClick={() => setIsCheckingOut(true)}
-                  className={`w-full py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition shadow-md ${
+                  className={`w-full py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition shadow-md cursor-pointer ${
                     canCheckout
                       ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20'
                       : 'bg-slate-200 text-slate-400 cursor-not-allowed'
                   }`}
                 >
-                  <span>Proceed to Checkout</span>
+                  <span>{isHindi ? 'चेकआउट के लिए आगे बढ़ें' : 'Proceed to Checkout'}</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
                 {!canCheckout && subtotal < minOrderAmount && (
-                  <p className="text-[10px] text-amber-600 text-center">
-                    Add ₹{minOrderAmount - subtotal} more to meet minimum order amount (₹{minOrderAmount}).
+                  <p className="text-[10px] text-amber-600 text-center font-bold">
+                    {isHindi
+                      ? `न्यूनतम ऑर्डर राशि (₹${minOrderAmount}) पूरी करने के लिए ₹${minOrderAmount - subtotal} का सामान और जोड़ें।`
+                      : `Add ₹${minOrderAmount - subtotal} more to meet minimum order amount (₹${minOrderAmount}).`}
                   </p>
                 )}
               </div>
@@ -454,31 +479,33 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOrderPlaced }) => {
 
               {/* Order Mode (Delivery vs Pickup) */}
               <div>
-                <label className="font-bold text-slate-700 block mb-1.5">Fulfillment Option</label>
+                <label className="font-bold text-slate-700 block mb-1.5">
+                  {isHindi ? 'ऑर्डर प्राप्ति का तरीका' : 'Fulfillment Option'}
+                </label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
                     onClick={() => setOrderType('delivery')}
-                    className={`py-2 px-3 rounded-xl border flex items-center justify-center gap-1.5 font-bold transition ${
+                    className={`py-2 px-3 rounded-xl border flex items-center justify-center gap-1.5 font-bold transition cursor-pointer ${
                       orderType === 'delivery'
                         ? 'border-emerald-600 bg-emerald-50 text-emerald-800'
                         : 'border-slate-200 hover:bg-slate-50 text-slate-600'
                     }`}
                   >
                     <MapPin className="w-3.5 h-3.5" />
-                    <span>Home Delivery</span>
+                    <span>{isHindi ? 'घर पर डिलीवरी' : 'Home Delivery'}</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setOrderType('pickup')}
-                    className={`py-2 px-3 rounded-xl border flex items-center justify-center gap-1.5 font-bold transition ${
+                    className={`py-2 px-3 rounded-xl border flex items-center justify-center gap-1.5 font-bold transition cursor-pointer ${
                       orderType === 'pickup'
                         ? 'border-emerald-600 bg-emerald-50 text-emerald-800'
                         : 'border-slate-200 hover:bg-slate-50 text-slate-600'
                     }`}
                   >
                     <Store className="w-3.5 h-3.5" />
-                    <span>Store Pickup</span>
+                    <span>{isHindi ? 'दुकान से पिकअप' : 'Store Pickup'}</span>
                   </button>
                 </div>
               </div>
@@ -486,23 +513,27 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOrderPlaced }) => {
               {/* Contact Information */}
               <div className="space-y-2">
                 <div>
-                  <label className="font-semibold text-slate-700 block mb-1">Your Full Name</label>
+                  <label className="font-semibold text-slate-700 block mb-1">
+                    {isHindi ? 'आपका पूरा नाम' : 'Your Full Name'}
+                  </label>
                   <input
                     type="text"
                     required
                     value={customerName}
                     onChange={(e) => setCustomerName(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:border-emerald-500"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:border-emerald-500 font-semibold"
                   />
                 </div>
                 <div>
-                  <label className="font-semibold text-slate-700 block mb-1">Contact Mobile Number</label>
+                  <label className="font-semibold text-slate-700 block mb-1">
+                    {isHindi ? 'मोबाइल नंबर' : 'Contact Mobile Number'}
+                  </label>
                   <input
                     type="tel"
                     required
                     value={customerPhone}
                     onChange={(e) => setCustomerPhone(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:border-emerald-500"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:border-emerald-500 font-semibold font-mono"
                   />
                 </div>
               </div>
@@ -511,18 +542,24 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOrderPlaced }) => {
               {orderType === 'delivery' && (
                 <div className="space-y-2 pt-1 border-t border-slate-100">
                   <div className="flex items-center justify-between">
-                    <label className="font-semibold text-slate-700">Delivery Address</label>
+                    <label className="font-semibold text-slate-700">
+                      {isHindi ? 'डिलीवरी का पता' : 'Delivery Address'}
+                    </label>
                     <div className="flex gap-1">
                       {(['home', 'work', 'other'] as const).map((type) => (
                         <button
                           key={type}
                           type="button"
                           onClick={() => setAddressType(type)}
-                          className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${
+                          className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded cursor-pointer ${
                             addressType === type ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'
                           }`}
                         >
-                          {type}
+                          {type === 'home'
+                            ? isHindi ? 'घर' : 'Home'
+                            : type === 'work'
+                            ? isHindi ? 'कार्यालय' : 'Work'
+                            : isHindi ? 'अन्य' : 'Other'}
                         </button>
                       ))}
                     </div>
@@ -532,27 +569,31 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOrderPlaced }) => {
                     required
                     value={deliveryAddress}
                     onChange={(e) => setDeliveryAddress(e.target.value)}
-                    placeholder="House/Flat number, Street, Locality"
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:border-emerald-500"
+                    placeholder={isHindi ? 'मकान/फ्लैट नंबर, गली/सड़क, इलाका' : 'House/Flat number, Street, Locality'}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:border-emerald-500 font-semibold"
                   />
                   <div>
-                    <label className="font-semibold text-slate-700 block mb-1">Nearby Landmark</label>
+                    <label className="font-semibold text-slate-700 block mb-1">
+                      {isHindi ? 'नज़दीकी पहचान स्थल (लैंडमार्क)' : 'Nearby Landmark'}
+                    </label>
                     <input
                       type="text"
                       value={landmark}
                       onChange={(e) => setLandmark(e.target.value)}
-                      placeholder="e.g. Near Metro Station / Community Park"
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:border-emerald-500"
+                      placeholder={isHindi ? 'उदा. मेट्रो स्टेशन के पास / पार्क के सामने' : 'e.g. Near Metro Station / Community Park'}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:border-emerald-500 font-semibold"
                     />
                   </div>
                   <div>
-                    <label className="font-semibold text-slate-700 block mb-1">Delivery Instructions</label>
+                    <label className="font-semibold text-slate-700 block mb-1">
+                      {isHindi ? 'डिलीवरी निर्देश' : 'Delivery Instructions'}
+                    </label>
                     <input
                       type="text"
                       value={deliveryInstructions}
                       onChange={(e) => setDeliveryInstructions(e.target.value)}
-                      placeholder="e.g. Ring bell twice, leave at reception"
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:border-emerald-500"
+                      placeholder={isHindi ? 'उदा. घंटी दो बार बजाएं, गेट पर छोड़ें' : 'e.g. Ring bell twice, leave at reception'}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:border-emerald-500 font-semibold"
                     />
                   </div>
                 </div>
@@ -560,7 +601,9 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOrderPlaced }) => {
 
               {/* Payment Method */}
               <div className="pt-1 border-t border-slate-100">
-                <label className="font-bold text-slate-700 block mb-1.5">Payment Method</label>
+                <label className="font-bold text-slate-700 block mb-1.5">
+                  {isHindi ? 'भुगतान का तरीका' : 'Payment Method'}
+                </label>
                 <div className="space-y-1.5">
                   <label className="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer">
                     <input
@@ -572,8 +615,12 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOrderPlaced }) => {
                     />
                     <Banknote className="w-4 h-4 text-emerald-600" />
                     <div>
-                      <p className="font-bold text-slate-800">Cash on Delivery (COD)</p>
-                      <p className="text-[10px] text-slate-500">Pay cash directly when order reaches you</p>
+                      <p className="font-bold text-slate-800">
+                        {isHindi ? 'कैश ऑन डिलीवरी (COD)' : 'Cash on Delivery (COD)'}
+                      </p>
+                      <p className="text-[10px] text-slate-500">
+                        {isHindi ? 'सामान मिलने पर नकद भुगतान करें' : 'Pay cash directly when order reaches you'}
+                      </p>
                     </div>
                   </label>
 
@@ -592,21 +639,25 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOrderPlaced }) => {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <CreditCard className="w-4 h-4 text-emerald-600 shrink-0" />
-                        <p className="font-bold text-slate-800 text-xs">UPI Payment (QR Code Scan & Pay)</p>
+                        <p className="font-bold text-slate-800 text-xs">
+                          {isHindi ? 'UPI पेमेंट (QR कोड स्कैन व पे)' : 'UPI Payment (QR Code Scan & Pay)'}
+                        </p>
                         <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase">
-                          Direct to Vendor
+                          {isHindi ? 'सीधा दुकानदार को' : 'Direct to Vendor'}
                         </span>
                       </div>
                       <p className="text-[11px] text-slate-600 mt-0.5 leading-snug">
-                        Scan the vendor's dynamic QR code with Google Pay, PhonePe, Paytm, or BHIM at checkout.
+                        {isHindi
+                          ? 'Google Pay, PhonePe, Paytm या BHIM से दुकानदार का QR कोड स्कैन करके सीधे पैसे भेजें।'
+                          : 'Scan the vendor\'s dynamic QR code with Google Pay, PhonePe, Paytm, or BHIM at checkout.'}
                       </p>
                       {cartShop?.upiId ? (
                         <p className="text-[10px] font-mono text-emerald-800 font-bold mt-1 bg-emerald-100/60 px-2 py-0.5 rounded w-fit">
-                          Payee: {cartShop.upiId}
+                          {isHindi ? 'दुकानदार UPI:' : 'Payee:'} {cartShop.upiId}
                         </p>
                       ) : (
                         <p className="text-[10px] text-slate-500 mt-1">
-                          Vendor UPI QR code will be generated upon proceeding.
+                          {isHindi ? 'आगे बढ़ने पर दुकानदार का UPI QR कोड तैयार होगा।' : 'Vendor UPI QR code will be generated upon proceeding.'}
                         </p>
                       )}
                     </div>
@@ -622,8 +673,12 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOrderPlaced }) => {
                     />
                     <Store className="w-4 h-4 text-emerald-600" />
                     <div>
-                      <p className="font-bold text-slate-800">Pay at Store Counter</p>
-                      <p className="text-[10px] text-slate-500">Ideal for self pickup</p>
+                      <p className="font-bold text-slate-800">
+                        {isHindi ? 'दुकान काउंटर पर भुगतान' : 'Pay at Store Counter'}
+                      </p>
+                      <p className="text-[10px] text-slate-500">
+                        {isHindi ? 'स्वयं पिकअप के लिए उपयुक्त' : 'Ideal for self pickup'}
+                      </p>
                     </div>
                   </label>
                 </div>
@@ -633,7 +688,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOrderPlaced }) => {
             {/* Bottom Actions */}
             <div className="pt-4 border-t border-slate-100 space-y-2 mt-4">
               <div className="flex justify-between items-center text-sm font-extrabold text-slate-900">
-                <span>Total Amount:</span>
+                <span>{isHindi ? 'कुल राशि:' : 'Total Amount:'}</span>
                 <span className="font-mono text-emerald-700 text-base">₹{finalTotal.toFixed(2)}</span>
               </div>
               <div className="flex gap-2">
@@ -642,7 +697,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOrderPlaced }) => {
                   onClick={() => setIsCheckingOut(false)}
                   className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition cursor-pointer"
                 >
-                  Back to Cart
+                  {isHindi ? 'कार्ट पर वापस' : 'Back to Cart'}
                 </button>
                 <button
                   type="submit"
@@ -654,19 +709,21 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onOrderPlaced }) => {
                   ) : paymentMethod === 'upi_online' ? (
                     <>
                       <QrCode className="w-4 h-4" />
-                      <span>Scan UPI QR & Pay (₹{finalTotal.toFixed(2)})</span>
+                      <span>{isHindi ? `UPI QR स्कैन और पे करें (₹${finalTotal.toFixed(2)})` : `Scan UPI QR & Pay (₹${finalTotal.toFixed(2)})`}</span>
                       <ArrowRight className="w-4 h-4" />
                     </>
                   ) : (
                     <>
-                      <span>Place Order & Generate Bill</span>
+                      <span>{isHindi ? 'ऑर्डर दें और बिल प्राप्त करें' : 'Place Order & Generate Bill'}</span>
                       <ArrowRight className="w-4 h-4" />
                     </>
                   )}
                 </button>
               </div>
               <p className="text-[10px] text-slate-400 text-center">
-                Powered by YUNAY • Digital Tax Invoice generated automatically upon order.
+                {isHindi
+                  ? 'YUNAY द्वारा संचालित • ऑर्डर होते ही डिजिटल टैक्स इनवॉइस तुरंत तैयार।'
+                  : 'Powered by YUNAY • Digital Tax Invoice generated automatically upon order.'}
               </p>
             </div>
           </form>

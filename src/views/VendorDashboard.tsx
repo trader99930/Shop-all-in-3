@@ -31,9 +31,12 @@ import {
   Check,
   Camera,
   Image as ImageIcon,
+  Palette,
 } from 'lucide-react';
 import { Shop, Product, ProductVariant, Order, Offer, Invoice } from '../types/index.ts';
 import { useAuth } from '../context/AuthContext.tsx';
+import { useLanguage } from '../context/LanguageContext.tsx';
+import { useTheme } from '../context/ThemeContext.tsx';
 import { InvoiceModal } from '../components/InvoiceModal.tsx';
 import { QRCodeModal } from '../components/QRCodeModal.tsx';
 import { ImageUploadPicker } from '../components/ImageUploadPicker.tsx';
@@ -99,6 +102,8 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
   initialTab,
 }) => {
   const { currentUser, getAuthHeaders, refreshSession } = useAuth();
+  const { t, isHindi, pick } = useLanguage();
+  const { theme, setTheme, themes } = useTheme();
   const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'stock' | 'customers' | 'offers' | 'settings'>(initialTab || 'orders');
 
   useEffect(() => {
@@ -651,9 +656,11 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
         <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-4">
           <Store className="w-8 h-8" />
         </div>
-        <h3 className="text-xl font-black text-slate-900">आपकी कोई दुकान नहीं मिली (No Storefront Active)</h3>
+        <h3 className="text-xl font-black text-slate-900">
+          {t('vendor.no_shop_title', 'No Storefront Found')}
+        </h3>
         <p className="text-xs text-slate-500 mt-2 leading-relaxed">
-          आपकी आईडी से अभी तक कोई दुकान नहीं जुड़ी है। अपने बिज़नेस का डिजिटल स्टोरफ्रंट शुरू करने के लिए नीचे दिए गए बटन पर क्लिक करें।
+          {t('vendor.no_shop_desc', 'You do not have a shop registered to this account yet. Click below to launch your digital storefront.')}
         </p>
 
         <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -663,7 +670,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
               className="w-full sm:w-auto px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-sm flex items-center justify-center gap-2 cursor-pointer"
             >
               <Plus className="w-4 h-4" />
-              <span>➕ अपनी डिजिटल दुकान बनाएं (Create Your Storefront)</span>
+              <span>{isHindi ? '➕ अपनी डिजिटल दुकान बनाएं' : '➕ Create Your Digital Storefront'}</span>
             </button>
           )}
         </div>
@@ -818,22 +825,26 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <h3 className="text-sm font-black text-slate-900 tracking-tight">
-                Direct Merchant UPI Payment (सीधा दुकानदार के खाते में भुगतान)
+                {isHindi ? 'दुकानदार सीधा UPI भुगतान' : 'Direct Merchant UPI Payment'}
               </h3>
               {shop.upiId ? (
                 <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black border border-emerald-300">
-                  Active: {shop.upiId}
+                  {isHindi ? 'सक्रिय:' : 'Active:'} {shop.upiId}
                 </span>
               ) : (
                 <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-black border border-amber-300 animate-pulse">
-                  UPI ID Not Configured
+                  {isHindi ? 'UPI आईडी कॉन्फ़िगर नहीं' : 'UPI ID Not Configured'}
                 </span>
               )}
             </div>
             <p className="text-xs text-slate-600 mt-0.5">
               {shop.upiId
-                ? `Customers will scan your personal UPI QR at checkout and pay directly to ${shop.upiId} without third-party deductions.`
-                : 'Add your UPI ID now so customers can scan and pay directly to your Google Pay, PhonePe, Paytm, or BHIM account!'}
+                ? isHindi
+                  ? `ग्राहक चेकआउट के समय सीधे आपके UPI QR कोड को स्कैन करके ₹ राशि ${shop.upiId} पर बिना किसी कटौती के भेजेंगे।`
+                  : `Customers will scan your personal UPI QR at checkout and pay directly to ${shop.upiId} without third-party deductions.`
+                : isHindi
+                  ? 'अपनी UPI आईडी अभी जोड़ें ताकि ग्राहक Google Pay, PhonePe, Paytm या BHIM से सीधा आपके खाते में भुगतान कर सकें!'
+                  : 'Add your UPI ID now so customers can scan and pay directly to your Google Pay, PhonePe, Paytm, or BHIM account!'}
             </p>
           </div>
         </div>
@@ -953,12 +964,12 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
       <div className="flex items-center gap-1.5 overflow-x-auto bg-slate-100 p-1.5 rounded-2xl border border-slate-200 text-xs font-bold scrollbar-none">
         <button
           onClick={() => setActiveTab('orders')}
-          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl transition shrink-0 ${
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl transition shrink-0 cursor-pointer ${
             activeTab === 'orders' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
           }`}
         >
           <ShoppingCart className="w-4 h-4 text-emerald-600" />
-          <span>Orders & Invoicing</span>
+          <span>{t('vendor.tab_orders', 'Orders & Invoicing')}</span>
           {orders.filter((o) => o.status === 'NEW').length > 0 && (
             <span className="px-1.5 py-0.2 bg-rose-500 text-white rounded-full text-[10px] font-black">
               {orders.filter((o) => o.status === 'NEW').length}
@@ -968,52 +979,52 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
 
         <button
           onClick={() => setActiveTab('products')}
-          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl transition shrink-0 ${
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl transition shrink-0 cursor-pointer ${
             activeTab === 'products' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
           }`}
         >
           <Package className="w-4 h-4 text-emerald-600" />
-          <span>Products & Variants ({products.length})</span>
+          <span>{t('vendor.tab_products', 'Products & Variants')} ({products.length})</span>
         </button>
 
         <button
           onClick={() => setActiveTab('stock')}
-          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl transition shrink-0 ${
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl transition shrink-0 cursor-pointer ${
             activeTab === 'stock' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
           }`}
         >
           <AlertTriangle className="w-4 h-4 text-amber-600" />
-          <span>Inventory & Low Stock</span>
+          <span>{t('vendor.tab_inventory', 'Inventory & Low Stock')}</span>
         </button>
 
         <button
           onClick={() => setActiveTab('customers')}
-          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl transition shrink-0 ${
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl transition shrink-0 cursor-pointer ${
             activeTab === 'customers' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
           }`}
         >
           <Users className="w-4 h-4 text-blue-600" />
-          <span>Customer Directory ({customers.length})</span>
+          <span>{t('vendor.tab_customers', 'Customer Directory')} ({customers.length})</span>
         </button>
 
         <button
           onClick={() => setActiveTab('offers')}
-          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl transition shrink-0 ${
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl transition shrink-0 cursor-pointer ${
             activeTab === 'offers' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
           }`}
         >
           <Tag className="w-4 h-4 text-purple-600" />
-          <span>Store Offers & Coupons ({offers.length})</span>
+          <span>{t('vendor.tab_offers', 'Store Offers & Coupons')} ({offers.length})</span>
         </button>
 
         <button
           onClick={() => setActiveTab('settings')}
-          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl transition shrink-0 ${
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl transition shrink-0 cursor-pointer ${
             activeTab === 'settings' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
           }`}
         >
           <Building2 className="w-4 h-4 text-emerald-600" />
-          <span>🏢 Company Profile & Details</span>
+          <span>{t('vendor.tab_company_profile', '🏢 Company Profile & Details')}</span>
         </button>
       </div>
 
@@ -1571,7 +1582,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                   title="View how clients see your store with pictures"
                 >
                   <Eye className="w-4 h-4" />
-                  <span>View Public Storefront (Pic Wala Show)</span>
+                  <span>{t('vendor.btn_view_storefront', 'View Public Storefront')}</span>
                 </button>
               </div>
             </div>
@@ -1586,41 +1597,41 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                 </div>
                 <div>
                   <h3 className="text-sm font-black text-slate-900">
-                    दुकानदार खाता प्रोफाइल (Shop Owner Account Info)
+                    {t('profile.owner_card_title', 'Shop Owner Account Info')}
                   </h3>
                   <p className="text-[11px] text-slate-500">
-                    केवल आपका अपना प्रोफाइल और आपकी पंजीकृत कंपनी विवरण
+                    {t('profile.owner_card_subtitle', 'Only your personal profile and registered company details')}
                   </p>
                 </div>
               </div>
               <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-black uppercase tracking-wider border border-emerald-300">
-                ✓ Verified Shop Owner
+                {t('profile.verified_badge', '✓ Verified Shop Owner')}
               </span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2 text-xs">
               <div className="p-3 bg-white rounded-xl border border-slate-200 shadow-2xs">
-                <span className="text-[10px] font-bold uppercase text-slate-400 block">Owner Name</span>
+                <span className="text-[10px] font-bold uppercase text-slate-400 block">{t('profile.owner_name', 'Owner Name')}</span>
                 <span className="text-sm font-black text-slate-800 mt-0.5 block truncate">
                   {currentUser?.name || 'Verified Merchant'}
                 </span>
               </div>
               <div className="p-3 bg-white rounded-xl border border-slate-200 shadow-2xs">
-                <span className="text-[10px] font-bold uppercase text-slate-400 block">Registered Phone</span>
+                <span className="text-[10px] font-bold uppercase text-slate-400 block">{t('profile.owner_phone', 'Registered Phone')}</span>
                 <span className="text-sm font-black text-slate-800 mt-0.5 block truncate">
                   {currentUser?.phone || shop.businessPhone}
                 </span>
               </div>
               <div className="p-3 bg-white rounded-xl border border-slate-200 shadow-2xs">
-                <span className="text-[10px] font-bold uppercase text-slate-400 block">Owner Email / ID</span>
+                <span className="text-[10px] font-bold uppercase text-slate-400 block">{t('profile.owner_email', 'Owner Email / ID')}</span>
                 <span className="text-sm font-black text-slate-800 mt-0.5 block truncate">
                   {currentUser?.email || 'N/A'}
                 </span>
               </div>
               <div className="p-3 bg-white rounded-xl border border-slate-200 shadow-2xs">
-                <span className="text-[10px] font-bold uppercase text-slate-400 block">Your Registered Shops</span>
+                <span className="text-[10px] font-bold uppercase text-slate-400 block">{t('profile.owner_shops_count', 'Your Registered Shops')}</span>
                 <span className="text-sm font-black text-emerald-700 mt-0.5 block">
-                  {availableShops.length} Digital Shop(s)
+                  {availableShops.length} {isHindi ? 'दुकानें' : 'Shop(s)'}
                 </span>
               </div>
             </div>
@@ -1661,7 +1672,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
               />
             </div>
 
-            {/* Direct UPI Payment Setup (मैनुअल यूपीआई पेमेंट सेटिंग्स) */}
+            {/* Direct UPI Payment Setup */}
             <div className="sm:col-span-2 p-5 bg-gradient-to-br from-emerald-50/90 via-teal-50/60 to-white rounded-3xl border-2 border-emerald-300 space-y-4 shadow-xs">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
@@ -1670,19 +1681,21 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                   </div>
                   <div>
                     <h4 className="text-sm font-black text-slate-900 flex items-center gap-2">
-                      <span>Shop UPI Payment ID (दुकानदार की UPI आईडी)</span>
+                      <span>{isHindi ? 'दुकानदार UPI पेमेंट आईडी' : 'Shop UPI Payment ID'}</span>
                       {settingUpiId ? (
                         <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black border border-emerald-300">
-                          Active & Ready
+                          {isHindi ? 'सक्रिय और तैयार' : 'Active & Ready'}
                         </span>
                       ) : (
                         <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-black border border-amber-300">
-                          Not Configured
+                          {isHindi ? 'कॉन्फ़िगर नहीं' : 'Not Configured'}
                         </span>
                       )}
                     </h4>
                     <p className="text-xs text-slate-600 mt-0.5">
-                      ग्राहक चेकआउट के समय इस UPI ID का डायनामिक QR कोड स्कैन करके सीधा आपको भुगतान करेंगे।
+                      {isHindi
+                        ? 'ग्राहक चेकआउट के समय इस UPI ID का डायनामिक QR कोड स्कैन करके सीधा आपको भुगतान करेंगे।'
+                        : 'Customers will scan a dynamic QR code linked directly to this UPI ID at checkout to pay you instantly.'}
                     </p>
                   </div>
                 </div>
@@ -1698,14 +1711,14 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                     className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-xl shadow-xs transition cursor-pointer self-start sm:self-auto shrink-0"
                   >
                     <QrCode className="w-3.5 h-3.5" />
-                    <span>Test / Preview QR</span>
+                    <span>{isHindi ? 'QR कोड टेस्ट / प्रीव्यू' : 'Test / Preview QR'}</span>
                   </button>
                 )}
               </div>
 
               <div>
                 <label className="font-bold text-slate-700 block mb-1.5 text-xs">
-                  Vendor UPI ID / VPA (दुकानदार की UPI आईडी दर्ज करें) *
+                  {t('profile.upi_label', 'Vendor UPI ID / VPA')} *
                 </label>
                 <div className="flex flex-col sm:flex-row gap-2">
                   <div className="relative flex-1">
@@ -1733,7 +1746,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                     ) : (
                       <>
                         <Check className="w-4 h-4" />
-                        <span>Save UPI ID</span>
+                        <span>{t('profile.btn_save_upi', 'Save UPI ID')}</span>
                       </>
                     )}
                   </button>
@@ -1742,7 +1755,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                 {upiSaveSuccess && (
                   <div className="mt-2 p-2 bg-emerald-100/80 border border-emerald-300 text-emerald-900 rounded-xl text-xs font-bold flex items-center gap-2 animate-in fade-in">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>UPI ID updated successfully! Customers can now scan and pay to this ID.</span>
+                    <span>{isHindi ? 'UPI आईडी सफलतापूर्वक अपडेट हो गई!' : 'UPI ID updated successfully! Customers can now scan and pay to this ID.'}</span>
                   </div>
                 )}
 
@@ -1754,10 +1767,10 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                 )}
 
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between text-[11px] text-slate-500 mt-2 gap-1">
-                  <span>Supported apps: Google Pay, PhonePe, Paytm, BHIM, Amazon Pay & all UPI banking apps.</span>
+                  <span>{isHindi ? 'सभी UPI ऐप्स समर्थित हैं: Google Pay, PhonePe, Paytm, BHIM, Amazon Pay आदि।' : 'Supported apps: Google Pay, PhonePe, Paytm, BHIM, Amazon Pay & all UPI banking apps.'}</span>
                   {shop.upiId && (
                     <span className="text-emerald-700 font-bold">
-                      Saved in Database: <span className="font-mono">{shop.upiId}</span>
+                      {isHindi ? 'डेटाबेस में सहेजा गया:' : 'Saved in Database:'} <span className="font-mono">{shop.upiId}</span>
                     </span>
                   )}
                 </div>
@@ -1765,18 +1778,18 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
             </div>
 
             <div className="sm:col-span-2">
-              <label className="font-bold text-slate-700 block mb-1">Store Announcement</label>
+              <label className="font-bold text-slate-700 block mb-1">{t('profile.announcement', 'Store Announcement')}</label>
               <input
                 type="text"
                 value={settingAnnouncement}
                 onChange={(e) => setSettingAnnouncement(e.target.value)}
-                placeholder="e.g. Free delivery on festival orders above ₹500!"
+                placeholder={isHindi ? 'उदा. ₹500 से अधिक के ऑर्डर पर मुफ़्त डिलीवरी!' : 'e.g. Free delivery on festival orders above ₹500!'}
                 className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white"
               />
             </div>
 
             <div className="sm:col-span-2">
-              <label className="font-bold text-slate-700 block mb-1">Store Description</label>
+              <label className="font-bold text-slate-700 block mb-1">{t('profile.description', 'Store Description')}</label>
               <textarea
                 rows={2}
                 value={settingDesc}
@@ -1785,40 +1798,40 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
               />
             </div>
 
-            {/* Shop Logo & Storefront Banner Photos (कैमरा / गैलरी से अपलोड) */}
+            {/* Shop Logo & Storefront Banner Photos */}
             <div className="sm:col-span-2 p-5 bg-slate-50/80 rounded-2xl border-2 border-slate-200/90 space-y-5">
               <div>
                 <h4 className="text-sm font-black text-slate-900">
-                  दुकान की फोटो और लोगो (Store Logo & Banner Photos)
+                  {t('profile.photos_title', 'Store Logo & Banner Photos')}
                 </h4>
                 <p className="text-xs font-bold text-slate-500 mt-0.5">
-                  कैमरा से सीधी फोटो लें या गैलरी से अपनी दुकान का लोगो और मुख्य बैनर लगाएं
+                  {t('profile.photos_subtitle', 'Take live camera photos or choose from gallery for your store logo and storefront banner')}
                 </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <ImageUploadPicker
-                  label="दुकान का लोगो (Shop Logo Photo)"
-                  sublabel="कैमरा या गैलरी से लोगो लगाएं"
+                  label={t('profile.logo_label', 'Shop Logo Photo')}
+                  sublabel={isHindi ? 'कैमरा या गैलरी से लोगो लगाएं' : 'Take camera photo or pick logo from gallery'}
                   value={settingLogoUrl}
                   onChange={(val) => setSettingLogoUrl(val)}
                   aspectRatio="square"
-                  placeholderText="दुकान का लोगो अपलोड करें"
+                  placeholderText={isHindi ? 'दुकान का लोगो लगाएं' : 'Upload shop logo'}
                 />
 
                 <ImageUploadPicker
-                  label="दुकान का मुख्य बैनर (Storefront Banner)"
-                  sublabel="दुकान के बोर्ड या फ्रंट की चौड़ी फोटो"
+                  label={t('profile.banner_label', 'Storefront Banner Photo')}
+                  sublabel={isHindi ? 'दुकान के बोर्ड या काउंटर की फोटो लगाएं' : 'Store board or counter storefront photo'}
                   value={settingBannerUrl}
                   onChange={(val) => setSettingBannerUrl(val)}
                   aspectRatio="banner"
-                  placeholderText="दुकान का बैनर अपलोड करें"
+                  placeholderText={isHindi ? 'दुकान का मुख्य बैनर लगाएं' : 'Upload storefront banner'}
                 />
               </div>
             </div>
 
             <div>
-              <label className="font-bold text-slate-700 block mb-1">Store Address</label>
+              <label className="font-bold text-slate-700 block mb-1">{t('profile.address', 'Store Address')}</label>
               <input
                 type="text"
                 value={settingAddress}
@@ -1828,7 +1841,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
             </div>
 
             <div>
-              <label className="font-bold text-slate-700 block mb-1">City</label>
+              <label className="font-bold text-slate-700 block mb-1">{t('profile.city', 'City')}</label>
               <input
                 type="text"
                 value={settingCity}
@@ -1838,7 +1851,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
             </div>
 
             <div>
-              <label className="font-bold text-slate-700 block mb-1">Opening Time</label>
+              <label className="font-bold text-slate-700 block mb-1">{t('profile.opening_time', 'Opening Time')}</label>
               <input
                 type="time"
                 value={settingOpenTime}
@@ -1848,7 +1861,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
             </div>
 
             <div>
-              <label className="font-bold text-slate-700 block mb-1">Closing Time</label>
+              <label className="font-bold text-slate-700 block mb-1">{t('profile.closing_time', 'Closing Time')}</label>
               <input
                 type="time"
                 value={settingCloseTime}
@@ -1858,7 +1871,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
             </div>
 
             <div>
-              <label className="font-bold text-slate-700 block mb-1">Minimum Order Amount (₹)</label>
+              <label className="font-bold text-slate-700 block mb-1">{t('profile.min_order', 'Minimum Order Amount (₹)')}</label>
               <input
                 type="number"
                 value={settingMinOrder}
@@ -1868,7 +1881,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
             </div>
 
             <div>
-              <label className="font-bold text-slate-700 block mb-1">Standard Delivery Fee (₹)</label>
+              <label className="font-bold text-slate-700 block mb-1">{t('profile.delivery_fee', 'Standard Delivery Fee (₹)')}</label>
               <input
                 type="number"
                 value={settingDeliveryFee}
@@ -1878,7 +1891,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
             </div>
 
             <div>
-              <label className="font-bold text-slate-700 block mb-1">Free Delivery Threshold (₹)</label>
+              <label className="font-bold text-slate-700 block mb-1">{t('profile.free_threshold', 'Free Delivery Threshold (₹)')}</label>
               <input
                 type="number"
                 value={settingFreeThreshold}
@@ -1888,7 +1901,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
             </div>
 
             <div>
-              <label className="font-bold text-slate-700 block mb-1">Temporary Shop Closure</label>
+              <label className="font-bold text-slate-700 block mb-1">{isHindi ? 'दुकान की अस्थायी स्थिति' : 'Temporary Shop Closure'}</label>
               <label className="flex items-center gap-2 p-2.5 bg-slate-50 border border-slate-200 rounded-xl cursor-pointer">
                 <input
                   type="checkbox"
@@ -1896,17 +1909,67 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                   onChange={(e) => setSettingTempClosed(e.target.checked)}
                   className="rounded text-emerald-600"
                 />
-                <span className="font-semibold text-slate-800">Mark Store Temporarily Closed</span>
+                <span className="font-semibold text-slate-800">{t('profile.temp_closed', 'Mark Store Temporarily Closed')}</span>
               </label>
+            </div>
+
+            {/* 5-Color Theme Selector for Store & Application */}
+            <div className="sm:col-span-2 p-5 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Palette className="w-5 h-5 text-emerald-600" />
+                  <div>
+                    <h4 className="text-sm font-black text-slate-900">
+                      {isHindi ? 'ऐप व स्टोर थीम रंग चुनें (5 आकर्षक रंग)' : 'Store & App Theme Color (5 Distinct Colors)'}
+                    </h4>
+                    <p className="text-[11px] text-slate-500">
+                      {isHindi
+                        ? 'अपनी दुकान और ऐप के लिए पसंदीदा रंग चुनें। बटन, हाइलाइट्स और बैज तुरंत बदल जाएंगे।'
+                        : 'Choose your preferred accent theme color. Buttons, badges, and accents will update across the platform.'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 pt-1">
+                {themes.map((tItem) => {
+                  const isSelected = theme === tItem.id;
+                  return (
+                    <button
+                      key={tItem.id}
+                      type="button"
+                      onClick={() => setTheme(tItem.id)}
+                      className={`p-3 rounded-xl border flex flex-col items-center gap-1.5 transition text-center cursor-pointer ${
+                        isSelected
+                          ? 'border-emerald-600 bg-white shadow-md ring-2 ring-emerald-500/20'
+                          : 'border-slate-200 bg-white hover:border-slate-300'
+                      }`}
+                    >
+                      <div
+                        className="w-7 h-7 rounded-full shadow-xs border-2 border-white ring-1 ring-slate-200 flex items-center justify-center text-white"
+                        style={{ backgroundColor: tItem.colorHex }}
+                      >
+                        {isSelected && <Check className="w-4 h-4 stroke-[3]" />}
+                      </div>
+                      <span className="text-xs font-black text-slate-800 leading-tight">
+                        {isHindi ? tItem.nameHi : tItem.nameEn}
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-medium">
+                        {isHindi ? tItem.descriptionHi : tItem.descriptionEn}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
           <div className="pt-4 border-t border-slate-100 flex justify-end">
             <button
               type="submit"
-              className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-xs"
+              className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer"
             >
-              Save Storefront Configuration
+              {t('profile.btn_save_settings', 'Save All Company Profile Changes')}
             </button>
           </div>
         </form>
@@ -2026,14 +2089,14 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                 </div>
               </div>
 
-              {/* Product Photo Upload (कैमरा या गैलरी से फोटो अपलोड करें) */}
+              {/* Product Photo Upload */}
               <ImageUploadPicker
-                label="उत्पाद की फोटो (Product Photo - Camera / Gallery)"
-                sublabel="कैमरा से सीधी फोटो खींचें या फोन / गैलरी से उत्पाद की फोटो लगाएं"
+                label={isHindi ? 'उत्पाद की फोटो' : 'Product Photo'}
+                sublabel={isHindi ? 'कैमरा से सीधी फोटो लें या गैलरी से उत्पाद की फोटो लगाएं' : 'Capture photo with camera or choose from gallery'}
                 value={pImageUrl}
                 onChange={(val) => setPImageUrl(val)}
                 aspectRatio="square"
-                placeholderText="कैमरा या गैलरी से उत्पाद की फोटो लगाएं"
+                placeholderText={isHindi ? 'कैमरा या गैलरी से फोटो लगाएं' : 'Add photo from camera or gallery'}
               />
 
               <div>

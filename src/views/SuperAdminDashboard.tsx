@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { Shop, Category, User, SupportTicket } from '../types/index.ts';
 import { useAuth } from '../context/AuthContext.tsx';
+import { useLanguage } from '../context/LanguageContext.tsx';
 
 interface SuperAdminDashboardProps {
   onInspectShop: (slug: string) => void;
@@ -30,6 +31,7 @@ interface SuperAdminDashboardProps {
 
 export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ onInspectShop, onManageShop }) => {
   const { getAuthHeaders, currentUser } = useAuth();
+  const { isHindi } = useLanguage();
   const [activeTab, setActiveTab] = useState<'overview' | 'shops' | 'customers' | 'categories' | 'tickets' | 'settings' | 'logs'>('overview');
   const [loading, setLoading] = useState(true);
 
@@ -1003,10 +1005,12 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ onInsp
                   </div>
                   <div>
                     <h4 className="font-bold text-slate-900 text-xs">
-                      Admin Platform UPI ID (सुपर एडमिन UPI ID)
+                      {isHindi ? 'प्लेटफ़ॉर्म सुपर एडमिन UPI ID' : 'Admin Platform UPI ID'}
                     </h4>
                     <p className="text-[11px] text-slate-600">
-                      Default UPI ID for platform fallback when a vendor has not configured their own UPI ID.
+                      {isHindi
+                        ? 'यदि किसी दुकानदार ने अपनी UPI आईडी नहीं डाली है, तो फॉलबैक के लिए यह डिफ़ॉल्ट UPI ID उपयोग होगी।'
+                        : 'Default UPI ID for platform fallback when a vendor has not configured their own UPI ID.'}
                     </p>
                   </div>
                 </div>

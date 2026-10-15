@@ -19,6 +19,7 @@ import {
 import { Shop, Product, ProductVariant, Offer, Review } from '../types/index.ts';
 import { useCart } from '../context/CartContext.tsx';
 import { useAuth } from '../context/AuthContext.tsx';
+import { useLanguage } from '../context/LanguageContext.tsx';
 import { QRCodeModal } from '../components/QRCodeModal.tsx';
 
 interface ShopStorefrontProps {
@@ -29,6 +30,7 @@ interface ShopStorefrontProps {
 export const ShopStorefront: React.FC<ShopStorefrontProps> = ({ shopSlug, onBack }) => {
   const { addToCart } = useCart();
   const { currentUser } = useAuth();
+  const { t, isHindi } = useLanguage();
   const isShopOwner = currentUser?.role === 'shopkeeper';
 
   // If a shopkeeper is viewing storefront, ensure they can ONLY ever load their own shop
@@ -106,7 +108,9 @@ export const ShopStorefront: React.FC<ShopStorefrontProps> = ({ shopSlug, onBack
     return (
       <div className="py-20 text-center space-y-4">
         <div className="w-12 h-12 rounded-full border-4 border-emerald-600 border-t-transparent animate-spin mx-auto" />
-        <p className="text-sm font-semibold text-slate-600">Loading digital storefront...</p>
+        <p className="text-sm font-semibold text-slate-600">
+          {isHindi ? 'डिजिटल दुकान लोड हो रही है...' : 'Loading digital storefront...'}
+        </p>
       </div>
     );
   }
@@ -115,25 +119,29 @@ export const ShopStorefront: React.FC<ShopStorefrontProps> = ({ shopSlug, onBack
     return (
       <div className="py-16 text-center bg-white rounded-3xl border border-slate-200 p-8 max-w-md mx-auto my-12">
         <Store className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-        <h3 className="text-lg font-bold text-slate-800">Storefront Not Found</h3>
+        <h3 className="text-lg font-bold text-slate-800">
+          {isHindi ? 'दुकान नहीं मिली' : 'Storefront Not Found'}
+        </h3>
         <p className="text-xs text-slate-500 mt-1">
-          The requested store slug does not exist or has been paused.
+          {isHindi
+            ? 'अनुरोधित स्टोर उपलब्ध नहीं है या बंद किया गया है।'
+            : 'The requested store slug does not exist or has been paused.'}
         </p>
         <button
           onClick={onBack}
-          className="mt-4 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition"
+          className="mt-4 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition cursor-pointer"
         >
-          Return to Marketplace
+          {isHindi ? 'मार्केटप्लेस पर वापस जाएं' : 'Return to Marketplace'}
         </button>
       </div>
     );
   }
 
   // Calculate distinct subcategories in this store
-  const storeCategories = ['All', ...Array.from(new Set(products.map((p) => p.category)))];
+  const storeCategories = [isHindi ? 'सभी' : 'All', ...Array.from(new Set(products.map((p) => p.category)))];
 
   const filteredProducts = products.filter((p) => {
-    const matchCat = selectedCategory === 'All' || p.category === selectedCategory;
+    const matchCat = selectedCategory === (isHindi ? 'सभी' : 'All') || selectedCategory === 'All' || p.category === selectedCategory;
     const matchSearch =
       !searchInStore ||
       p.name.toLowerCase().includes(searchInStore.toLowerCase()) ||
@@ -164,14 +172,14 @@ export const ShopStorefront: React.FC<ShopStorefrontProps> = ({ shopSlug, onBack
           <ArrowLeft className="w-4 h-4" />
           <span>
             {currentUser?.role === 'shopkeeper'
-              ? '← मार्केटप्लेस पर जाएं (Marketplace)'
-              : '← All Neighborhood Stores'}
+              ? isHindi ? '← मार्केटप्लेस पर जाएं' : '← Go to Marketplace'
+              : isHindi ? '← सभी स्थानीय दुकानें' : '← All Neighborhood Stores'}
           </span>
         </button>
 
         {currentUser?.role === 'shopkeeper' && (
           <span className="text-xs font-black text-emerald-800 bg-emerald-100/90 px-3 py-1.5 rounded-xl border border-emerald-300 shadow-2xs flex items-center gap-1.5">
-            <span>👑 आपकी अपनी दुकान का लाइव प्रिव्यू (Live Preview)</span>
+            <span>{isHindi ? '👑 आपकी दुकान का लाइव प्रिव्यू' : '👑 Live Preview of Your Store'}</span>
           </span>
         )}
       </div>
@@ -202,27 +210,35 @@ export const ShopStorefront: React.FC<ShopStorefrontProps> = ({ shopSlug, onBack
                     shop.isTemporarilyClosed ? 'bg-amber-400' : 'bg-emerald-400 animate-pulse'
                   }`}
                 />
-                <span>{shop.isTemporarilyClosed ? 'Temporarily Closed' : 'Store Open Now'}</span>
+                <span>
+                  {shop.isTemporarilyClosed
+                    ? isHindi ? 'अस्थायी रूप से बंद' : 'Temporarily Closed'
+                    : isHindi ? 'दुकान अभी खुली है' : 'Store Open Now'}
+                </span>
               </div>
             </div>
 
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setShowQRModal(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/95 hover:bg-white text-slate-900 text-xs font-bold shadow-md transition"
-                title="View Store QR Code"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/95 hover:bg-white text-slate-900 text-xs font-bold shadow-md transition cursor-pointer"
+                title={isHindi ? 'दुकान का QR कोड देखें' : 'View Store QR Code'}
               >
                 <QrCode className="w-3.5 h-3.5 text-emerald-600" />
-                <span className="hidden sm:inline">Store QR Code</span>
+                <span className="hidden sm:inline">{isHindi ? 'स्टोर QR कोड' : 'Store QR Code'}</span>
               </button>
 
               <button
                 onClick={handleShare}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/95 hover:bg-white text-slate-900 text-xs font-bold shadow-md transition"
-                title="Share Store Link"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/95 hover:bg-white text-slate-900 text-xs font-bold shadow-md transition cursor-pointer"
+                title={isHindi ? 'दुकान का लिंक शेयर करें' : 'Share Store Link'}
               >
                 {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Share2 className="w-3.5 h-3.5 text-slate-700" />}
-                <span className="hidden sm:inline">{copiedLink ? 'Copied Link' : 'Share Store'}</span>
+                <span className="hidden sm:inline">
+                  {copiedLink
+                    ? isHindi ? 'लिंक कॉपी हो गया' : 'Copied Link'
+                    : isHindi ? 'शेयर करें' : 'Share Store'}
+                </span>
               </button>
             </div>
           </div>
@@ -254,7 +270,7 @@ export const ShopStorefront: React.FC<ShopStorefrontProps> = ({ shopSlug, onBack
                   <span className="flex items-center gap-1">
                     <Clock className="w-3 h-3 text-emerald-400" />
                     <span>
-                      {shop.openingTime} - {shop.closingTime} (Off: {shop.weeklyClosedDay})
+                      {shop.openingTime} - {shop.closingTime} ({isHindi ? 'साप्ताहिक अवकाश:' : 'Off:'} {shop.weeklyClosedDay})
                     </span>
                   </span>
                 </div>
@@ -267,7 +283,9 @@ export const ShopStorefront: React.FC<ShopStorefrontProps> = ({ shopSlug, onBack
                 <Award className="w-4 h-4" />
                 <span>Powered by YUNAY</span>
               </div>
-              <p className="text-[10px] text-slate-400 mt-0.5">Verified Independent Merchant</p>
+              <p className="text-[10px] text-slate-400 mt-0.5">
+                {isHindi ? 'सत्यापित स्वतंत्र व्यापारी' : 'Verified Independent Merchant'}
+              </p>
             </div>
           </div>
         </div>
@@ -286,16 +304,16 @@ export const ShopStorefront: React.FC<ShopStorefrontProps> = ({ shopSlug, onBack
 
           <div className="flex flex-wrap items-center gap-2 text-xs">
             <span className="bg-white px-3 py-1.5 rounded-lg border border-slate-200 font-medium text-slate-700">
-              Min Order: <strong className="text-slate-900">₹{shop.minOrderAmount}</strong>
+              {isHindi ? 'न्यूनतम ऑर्डर:' : 'Min Order:'} <strong className="text-slate-900">₹{shop.minOrderAmount}</strong>
             </span>
             <span className="bg-white px-3 py-1.5 rounded-lg border border-slate-200 font-medium text-slate-700">
-              Delivery Fee:{' '}
+              {isHindi ? 'डिलीवरी शुल्क:' : 'Delivery Fee:'}{' '}
               <strong className="text-slate-900">
-                {Number(shop.deliveryFee) === 0 ? 'FREE' : `₹${shop.deliveryFee}`}
+                {Number(shop.deliveryFee) === 0 ? (isHindi ? 'मुफ़्त' : 'FREE') : `₹${shop.deliveryFee}`}
               </strong>
             </span>
             <span className="bg-white px-3 py-1.5 rounded-lg border border-slate-200 font-medium text-slate-700">
-              Free Delivery above: <strong className="text-emerald-700">₹{shop.freeDeliveryThreshold}</strong>
+              {isHindi ? 'मुफ़्त डिलीवरी:' : 'Free Delivery above:'} <strong className="text-emerald-700">₹{shop.freeDeliveryThreshold}</strong>
             </span>
           </div>
         </div>
@@ -309,7 +327,7 @@ export const ShopStorefront: React.FC<ShopStorefrontProps> = ({ shopSlug, onBack
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold shrink-0 transition ${
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold shrink-0 transition cursor-pointer ${
                 selectedCategory === cat
                   ? 'bg-slate-900 text-white shadow-xs'
                   : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
@@ -324,10 +342,10 @@ export const ShopStorefront: React.FC<ShopStorefrontProps> = ({ shopSlug, onBack
         <div className="relative w-full sm:w-72">
           <input
             type="text"
-            placeholder={`Search in ${shop.name}...`}
+            placeholder={isHindi ? `${shop.name} में खोजें...` : `Search in ${shop.name}...`}
             value={searchInStore}
             onChange={(e) => setSearchInStore(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 bg-slate-100 rounded-xl text-xs border border-slate-200 focus:bg-white focus:outline-none focus:border-emerald-500"
+            className="w-full pl-9 pr-3 py-2 bg-slate-100 rounded-xl text-xs border border-slate-200 focus:bg-white focus:outline-none focus:border-emerald-500 font-semibold"
           />
           <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
         </div>
@@ -338,19 +356,23 @@ export const ShopStorefront: React.FC<ShopStorefrontProps> = ({ shopSlug, onBack
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
             <ShoppingBag className="w-5 h-5 text-emerald-600" />
-            <span>Store Products & Catalogue</span>
+            <span>{isHindi ? 'दुकान के उत्पाद व कैटलॉग' : 'Store Products & Catalogue'}</span>
           </h2>
-          <span className="text-xs text-slate-500">
-            {filteredProducts.length} items available
+          <span className="text-xs text-slate-500 font-bold">
+            {filteredProducts.length} {isHindi ? 'सामान उपलब्ध' : 'items available'}
           </span>
         </div>
 
         {filteredProducts.length === 0 ? (
           <div className="text-center py-16 bg-white rounded-3xl border border-slate-200 p-8">
             <ShoppingBag className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-            <p className="text-sm font-bold text-slate-700">No products found in this section</p>
+            <p className="text-sm font-bold text-slate-700">
+              {isHindi ? 'इस श्रेणी में कोई उत्पाद नहीं मिला' : 'No products found in this section'}
+            </p>
             <p className="text-xs text-slate-400 mt-1">
-              Try clearing your search term or select another category.
+              {isHindi
+                ? 'खोज शब्द बदलें या कोई अन्य श्रेणी चुनें।'
+                : 'Try clearing your search term or select another category.'}
             </p>
           </div>
         ) : (
@@ -385,18 +407,20 @@ export const ShopStorefront: React.FC<ShopStorefrontProps> = ({ shopSlug, onBack
 
                       {/* Stock Badge */}
                       {isOutOfStock ? (
-                        <span className="absolute top-2 left-2 bg-rose-600 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-xs">
-                          OUT OF STOCK
+                        <span className="absolute top-2 left-2 bg-rose-600 text-white text-[10px] font-black px-2 py-0.5 rounded shadow-xs">
+                          {isHindi ? 'स्टॉक समाप्त' : 'OUT OF STOCK'}
                         </span>
                       ) : isLowStock ? (
-                        <span className="absolute top-2 left-2 bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-xs">
-                          ONLY {activeVariant ? activeVariant.stock : product.stockQuantity} LEFT
+                        <span className="absolute top-2 left-2 bg-amber-500 text-white text-[10px] font-black px-2 py-0.5 rounded shadow-xs">
+                          {isHindi
+                            ? `केवल ${activeVariant ? activeVariant.stock : product.stockQuantity} शेष`
+                            : `ONLY ${activeVariant ? activeVariant.stock : product.stockQuantity} LEFT`}
                         </span>
                       ) : null}
 
                       {/* Discount badge */}
                       {Number(product.discountPrice) > 0 && !activeVariant && (
-                        <span className="absolute top-2 right-2 bg-emerald-600 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-xs">
+                        <span className="absolute top-2 right-2 bg-emerald-600 text-white text-[10px] font-black px-2 py-0.5 rounded shadow-xs">
                           {Math.round(
                             ((Number(product.price) - Number(product.discountPrice)) /
                               Number(product.price)) *
@@ -427,7 +451,7 @@ export const ShopStorefront: React.FC<ShopStorefrontProps> = ({ shopSlug, onBack
                     {product.variants && product.variants.length > 0 && (
                       <div className="mt-3 pt-2 border-t border-slate-100">
                         <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
-                          Select Variant
+                          {isHindi ? 'वेरिएंट चुनें' : 'Select Variant'}
                         </label>
                         <div className="flex flex-wrap gap-1.5">
                           {product.variants.map((v) => (
@@ -436,7 +460,7 @@ export const ShopStorefront: React.FC<ShopStorefrontProps> = ({ shopSlug, onBack
                               onClick={() =>
                                 setSelectedVariants((prev) => ({ ...prev, [product.id]: v }))
                               }
-                              className={`px-2 py-1 text-[11px] font-semibold rounded-lg border transition ${
+                              className={`px-2 py-1 text-[11px] font-semibold rounded-lg border transition cursor-pointer ${
                                 activeVariant?.id === v.id
                                   ? 'border-emerald-600 bg-emerald-50 text-emerald-800'
                                   : 'border-slate-200 hover:bg-slate-50 text-slate-700'
@@ -471,13 +495,13 @@ export const ShopStorefront: React.FC<ShopStorefrontProps> = ({ shopSlug, onBack
                     <button
                       disabled={isOutOfStock}
                       onClick={() => addToCart(product, shop, activeVariant)}
-                      className={`px-3 py-2 rounded-xl text-xs font-bold transition shadow-xs ${
+                      className={`px-3 py-2 rounded-xl text-xs font-bold transition shadow-xs cursor-pointer ${
                         isOutOfStock
                           ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
                           : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20'
                       }`}
                     >
-                      {isOutOfStock ? 'Sold Out' : 'Add to Cart +'}
+                      {isOutOfStock ? (isHindi ? 'स्टॉक समाप्त' : 'Sold Out') : (isHindi ? 'कार्ट में जोड़ें +' : 'Add to Cart +')}
                     </button>
                   </div>
                 </div>
@@ -493,10 +517,12 @@ export const ShopStorefront: React.FC<ShopStorefrontProps> = ({ shopSlug, onBack
           <div>
             <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
               <Star className="w-5 h-5 text-amber-500 fill-amber-500" />
-              <span>Customer Reviews & Store Ratings</span>
+              <span>{isHindi ? 'ग्राहक समीक्षाएं व रेटिंग्स' : 'Customer Reviews & Store Ratings'}</span>
             </h3>
             <p className="text-xs text-slate-500 mt-0.5">
-              Verified feedback from local patrons who completed orders at {shop.name}
+              {isHindi
+                ? `${shop.name} से खरीदारी करने वाले स्थानीय ग्राहकों की सत्यापित प्रतिक्रिया`
+                : `Verified feedback from local patrons who completed orders at ${shop.name}`}
             </p>
           </div>
 
@@ -508,14 +534,18 @@ export const ShopStorefront: React.FC<ShopStorefrontProps> = ({ shopSlug, onBack
                   <Star key={s} className="w-3 h-3 fill-amber-500" />
                 ))}
               </div>
-              <span className="text-slate-500 font-semibold">{stats.totalReviews} verified ratings</span>
+              <span className="text-slate-500 font-semibold">
+                {stats.totalReviews} {isHindi ? 'सत्यापित समीक्षाएं' : 'verified ratings'}
+              </span>
             </div>
           </div>
         </div>
 
         {reviews.length === 0 ? (
           <p className="text-xs text-slate-500 text-center py-6">
-            No customer reviews yet. Be the first to order and review this shop!
+            {isHindi
+              ? 'अभी कोई समीक्षा नहीं है। इस दुकान से ऑर्डर करने वाले पहले ग्राहक बनें!'
+              : 'No customer reviews yet. Be the first to order and review this shop!'}
           </p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -525,7 +555,9 @@ export const ShopStorefront: React.FC<ShopStorefrontProps> = ({ shopSlug, onBack
                 className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-2 text-xs"
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-slate-800">{rev.userName || 'Verified Buyer'}</span>
+                  <span className="font-bold text-slate-800">
+                    {rev.userName || (isHindi ? 'सत्यापित ग्राहक' : 'Verified Buyer')}
+                  </span>
                   <div className="flex text-amber-500">
                     {Array.from({ length: rev.rating }).map((_, i) => (
                       <Star key={i} className="w-3 h-3 fill-amber-500" />
@@ -546,7 +578,7 @@ export const ShopStorefront: React.FC<ShopStorefrontProps> = ({ shopSlug, onBack
       <div className="text-center py-6 border-t border-slate-200">
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-900 text-white shadow-lg text-xs font-bold">
           <Award className="w-4 h-4 text-emerald-400" />
-          <span>This Digital Storefront is Powered by YUNAY</span>
+          <span>{isHindi ? 'यह डिजिटल स्टोरफ्रंट YUNAY द्वारा संचालित है' : 'This Digital Storefront is Powered by YUNAY'}</span>
         </div>
       </div>
 

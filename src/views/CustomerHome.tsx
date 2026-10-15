@@ -18,6 +18,7 @@ import {
 import { Shop, Product, Category } from '../types/index.ts';
 import { useCart } from '../context/CartContext.tsx';
 import { useAuth } from '../context/AuthContext.tsx';
+import { useLanguage } from '../context/LanguageContext.tsx';
 
 interface CustomerHomeProps {
   onSelectShop: (shopSlug: string) => void;
@@ -38,6 +39,7 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
 }) => {
   const { addToCart } = useCart();
   const { currentUser, getAuthHeaders } = useAuth();
+  const { t, isHindi, pick } = useLanguage();
   const isShopOwner = currentUser?.role === 'shopkeeper';
 
   const [shops, setShops] = useState<Shop[]>([]);
@@ -46,94 +48,76 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
   const [popularProducts, setPopularProducts] = useState<{ product: Product; shop: Shop }[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch shops & categories with multi-tenant filtering
+  // Fetch shops & categories with multi-tenant isolation
   useEffect(() => {
     let isMounted = true;
     let retryTimer: any = null;
 
-    const fetchData = async (retryCount = 0) => {
+    const fetchData = async () => {
       setLoading(true);
       try {
-        const authHeaders = getAuthHeaders();
-        const cityParam = !isShopOwner && selectedCity && selectedCity !== 'All Cities' ? `&city=${encodeURIComponent(selectedCity)}` : '';
-        const catParam = !isShopOwner && selectedCategory && selectedCategory !== 'All' ? `&category=${encodeURIComponent(selectedCategory)}` : '';
-        const searchParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : '';
-        const ownerParam = isShopOwner && currentUser?.id ? `&ownerId=${currentUser.id}` : '';
+        const cityParam = selectedCity && selectedCity !== 'All Cities' && selectedCity !== 'सभी शहर' ? `city=${encodeURIComponent(selectedCity)}` : '';
+        const catParam = selectedCategory && selectedCategory !== 'All' ? `category=${encodeURIComponent(selectedCategory)}` : '';
+        
+        let queryParams = [cityParam, catParam].filter(Boolean).join('&');
+        if (isShopOwner && currentUser?.id) {
+          queryParams = queryParams ? `${queryParams}&ownerId=${currentUser.id}` : `ownerId=${currentUser.id}`;
+        }
 
-        // For a shop owner, do not restrict status to active only (they see all their shops: active, pending, etc.)
-        const statusParam = isShopOwner ? '' : '?status=active';
-        const connector = statusParam ? '&' : '?';
-
-        const [catRes, shopsRes, prodRes] = await Promise.all([
-          fetch('/api/categories').catch(() => null),
-          fetch(`/api/shops${statusParam}${connector}${cityParam}${catParam}${searchParam}${ownerParam}`, {
-            headers: authHeaders,
-          }).catch(() => null),
-          fetch('/api/products/search?q=', {
-            headers: authHeaders,
-          }).catch(() => null),
+        const [shopsRes, catsRes] = await Promise.all([
+          fetch(`/api/shops${queryParams ? `?${queryParams}` : ''}`, {
+            headers: isShopOwner ? getAuthHeaders() : {},
+          }),
+          fetch('/api/categories'),
         ]);
 
-        let loadedSomething = false;
+        if (!isMounted) return;
 
-        if (catRes && catRes.ok) {
-          const cats = await catRes.json().catch(() => []);
-          if (isMounted) setCategories(cats);
-          loadedSomething = true;
-        }
-
-        const myShopIds = new Set<number>();
-        if (isShopOwner && currentUser) {
-          if (currentUser.shop?.id) myShopIds.add(Number(currentUser.shop.id));
-          (currentUser.shops || []).forEach((sh: Shop) => myShopIds.add(Number(sh.id)));
-        }
-
-        if (shopsRes && shopsRes.ok) {
-          let data = await shopsRes.json().catch(() => []);
-          // STRICT MULTI-TENANT FILTER: Shop owners only see their own shop(s)
-          if (isShopOwner && currentUser) {
-            const myUserId = Number(currentUser.id);
-            data = data.filter((s: Shop) => {
-              const isOwner = s.ownerId && Number(s.ownerId) === myUserId;
-              const isMyShop = myShopIds.has(Number(s.id));
-              return isOwner || isMyShop;
-            });
-            // Update myShopIds with filtered shop IDs
-            data.forEach((s: Shop) => myShopIds.add(Number(s.id)));
-          } else if (isShopOwner && !currentUser) {
-            // While session is loading, never display other shops to a shop owner
-            data = [];
+        if (shopsRes.ok) {
+          const shopData = await shopsRes.json();
+          if (isShopOwner && currentUser?.id) {
+            const myOwnerId = Number(currentUser.id);
+            const myShops = shopData.filter((s: any) => Number(s.ownerId || s.owner_id) === myOwnerId);
+            setShops(myShops);
+          } else {
+            setShops(shopData);
           }
-          if (isMounted) setShops(data);
-          loadedSomething = true;
         }
 
-        if (prodRes && prodRes.ok) {
-          let prods = await prodRes.json().catch(() => []);
-          // STRICT MULTI-TENANT FILTER: Shop owners only see their own products
-          if (isShopOwner && currentUser) {
-            prods = prods.filter((item: any) => {
-              const shopId = item.shop?.id || item.product?.shopId;
-              return shopId && myShopIds.has(Number(shopId));
+        if (catsRes.ok) {
+          const catData = await catsRes.json();
+          setCategories(catData);
+        }
+
+        // Fetch products
+        let searchUrl = `/api/products/search?${searchQuery ? `q=${encodeURIComponent(searchQuery)}` : ''}`;
+        if (selectedCategory && selectedCategory !== 'All') {
+          searchUrl += `&category=${encodeURIComponent(selectedCategory)}`;
+        }
+        if (selectedCity && selectedCity !== 'All Cities' && selectedCity !== 'सभी शहर') {
+          searchUrl += `&city=${encodeURIComponent(selectedCity)}`;
+        }
+
+        const prodsRes = await fetch(searchUrl, {
+          headers: isShopOwner ? getAuthHeaders() : {},
+        });
+        if (prodsRes.ok && isMounted) {
+          const prodsData = await prodsRes.json();
+          if (isShopOwner && currentUser?.id) {
+            const myOwnerId = Number(currentUser.id);
+            const isolatedProds = prodsData.filter((item: any) => {
+              const itemOwnerId = Number(item.shop?.ownerId || item.shop?.owner_id);
+              return itemOwnerId === myOwnerId;
             });
-          } else if (isShopOwner && !currentUser) {
-            prods = [];
+            setPopularProducts(isolatedProds.slice(0, 12));
+          } else {
+            setPopularProducts(prodsData.slice(0, 12));
           }
-          if (isMounted) setPopularProducts(prods.slice(0, 8));
-          loadedSomething = true;
         }
-
-        // If network was temporarily down during dev server restart, retry once after 800ms
-        if (!loadedSomething && retryCount < 2 && isMounted) {
-          retryTimer = setTimeout(() => fetchData(retryCount + 1), 800);
-          return;
-        }
-      } catch {
-        // Fallback for transient network reconnects
+      } catch (err) {
+        console.error('Failed to load marketplace content:', err);
       } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+        if (isMounted) setLoading(false);
       }
     };
 
@@ -152,18 +136,18 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
           <div className="relative z-10 max-w-3xl space-y-4">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-xs font-black uppercase tracking-wider">
               <Building2 className="w-4 h-4 text-emerald-400" />
-              <span>दुकानदार पोर्टल (Merchant Storefront Portal)</span>
+              <span>{t('merchant.portal_badge', 'Merchant Storefront Portal')}</span>
             </div>
 
             <h1 className="text-2xl sm:text-4xl font-black tracking-tight leading-tight">
-              नमस्ते, {currentUser?.name || 'दुकानदार'}! <br />
+              {isHindi ? `नमस्ते, ${currentUser?.name || 'दुकानदार'}!` : `Welcome, ${currentUser?.name || 'Shop Owner'}!`} <br />
               <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-200 bg-clip-text text-transparent">
-                आपकी अपनी डिजिटल दुकान
+                {t('merchant.welcome_title', 'Your Digital Storefront')}
               </span>
             </h1>
 
             <p className="text-sm sm:text-base text-slate-300 leading-relaxed max-w-2xl font-semibold">
-              दुकानदार पोर्टल में केवल आपकी अपनी जोड़ी गई दुकान और उत्पाद प्रदर्शित हैं। यहाँ से आप अपनी दुकान की लाइव स्थिति देख सकते हैं या प्रोफाइल और कैटलॉग मैनेज कर सकते हैं।
+              {t('merchant.welcome_desc', 'Only your registered store and products are displayed in your merchant portal. View your live storefront and manage company details from here.')}
             </p>
 
             <div className="flex flex-wrap items-center gap-3 pt-2">
@@ -172,7 +156,7 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
                 className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white rounded-xl text-sm font-black transition shadow-lg shadow-emerald-500/30 flex items-center gap-2 cursor-pointer"
               >
                 <Building2 className="w-4 h-4" />
-                <span>🏢 My Company Profile (डैशबोर्ड)</span>
+                <span>{t('merchant.btn_company_profile', '🏢 My Company Profile')}</span>
               </button>
 
               {shops.length > 0 && (
@@ -181,7 +165,7 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
                   className="px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-xl text-sm font-black transition flex items-center gap-2 cursor-pointer backdrop-blur-xs"
                 >
                   <Store className="w-4 h-4 text-emerald-400" />
-                  <span>🏪 पब्लिक स्टोर देखें (View Live Store)</span>
+                  <span>{t('merchant.btn_view_live', '🏪 View Live Store')}</span>
                 </button>
               )}
             </div>
@@ -194,37 +178,47 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
           <div className="relative z-10 max-w-3xl space-y-4">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-xs font-bold">
               <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Hyperlocal Neighborhood Commerce</span>
+              <span>{t('hero.badge', 'Hyperlocal Neighborhood Commerce')}</span>
             </div>
 
             <h1 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight">
-              Support Local Shops. <br />
-              <span className="bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent">
-                Order Directly Online.
-              </span>
+              {isHindi ? (
+                <>
+                  स्थानीय दुकानों का साथ दें। <br />
+                  <span className="bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent">
+                    सीधे ऑनलाइन ऑर्डर करें।
+                  </span>
+                </>
+              ) : (
+                <>
+                  Support Local Shops. <br />
+                  <span className="bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent">
+                    Order Directly Online.
+                  </span>
+                </>
+              )}
             </h1>
 
             <p className="text-sm sm:text-base text-slate-300 leading-relaxed max-w-2xl">
-              Order fresh groceries, bakery goods, fashion, stationery, and daily essentials from your trusted local shopkeepers. Delivered to your doorstep or ready for express counter pickup.
+              {t('hero.subtitle', 'Order fresh groceries, bakery goods, fashion, stationery, and daily essentials from your trusted local shopkeepers. Delivered to your doorstep or ready for express counter pickup.')}
             </p>
 
             <div className="flex flex-wrap items-center gap-3 pt-2">
-              <div className="flex items-center gap-2 bg-slate-800/80 backdrop-blur-md px-3.5 py-2 rounded-xl border border-slate-700 text-xs">
+              <div className="flex items-center gap-2 bg-slate-800/80 backdrop-blur-md px-3.5 py-2 rounded-xl border border-slate-700 text-xs font-bold">
                 <Truck className="w-4 h-4 text-emerald-400" />
-                <span>30-60 Min Express Delivery</span>
+                <span>{t('hero.feature_delivery', '30-60 Min Express Delivery')}</span>
               </div>
-              <div className="flex items-center gap-2 bg-slate-800/80 backdrop-blur-md px-3.5 py-2 rounded-xl border border-slate-700 text-xs">
+              <div className="flex items-center gap-2 bg-slate-800/80 backdrop-blur-md px-3.5 py-2 rounded-xl border border-slate-700 text-xs font-bold">
                 <Award className="w-4 h-4 text-emerald-400" />
-                <span>Direct Store Pricing & Freshness</span>
+                <span>{t('hero.feature_pricing', 'Direct Store Pricing & Freshness')}</span>
               </div>
-              <div className="flex items-center gap-2 bg-slate-800/80 backdrop-blur-md px-3.5 py-2 rounded-xl border border-slate-700 text-xs">
+              <div className="flex items-center gap-2 bg-slate-800/80 backdrop-blur-md px-3.5 py-2 rounded-xl border border-slate-700 text-xs font-bold">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                <span>Automated Legal Invoicing</span>
+                <span>{t('hero.feature_billing', 'Automated Legal Invoicing')}</span>
               </div>
             </div>
           </div>
 
-          {/* Decorative background glow */}
           <div className="absolute right-0 top-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
         </section>
       )}
@@ -233,39 +227,41 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
       {!isShopOwner && categories.length > 0 && (
         <section className="space-y-3">
           <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <ShoppingBag className="w-5 h-5 text-emerald-600" />
-            <span>Browse by Category</span>
-          </h2>
-          <span className="text-xs text-slate-500">{categories.length} categories available</span>
-        </div>
+            <h2 className="text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
+              <ShoppingBag className="w-5 h-5 text-emerald-600" />
+              <span>{t('cat.browse', 'Browse by Category')}</span>
+            </h2>
+            <span className="text-xs text-slate-500 font-bold">
+              {categories.length} {t('cat.count_suffix', 'categories available')}
+            </span>
+          </div>
 
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-          <button
-            onClick={() => setSelectedCategory('All')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold shrink-0 transition ${
-              selectedCategory === 'All'
-                ? 'bg-slate-900 text-white shadow-md'
-                : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
-            }`}
-          >
-            All Categories
-          </button>
-          {categories.map((cat) => (
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
             <button
-              key={cat.id}
-              onClick={() => setSelectedCategory(cat.name)}
-              className={`px-4 py-2 rounded-xl text-xs font-bold shrink-0 transition flex items-center gap-1.5 ${
-                selectedCategory === cat.name
-                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
+              onClick={() => setSelectedCategory('All')}
+              className={`px-4 py-2 rounded-xl text-xs font-bold shrink-0 transition cursor-pointer ${
+                selectedCategory === 'All'
+                  ? 'bg-slate-900 text-white shadow-md'
                   : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
               }`}
             >
-              <span>{cat.name}</span>
+              {t('cat.all', 'All Categories')}
             </button>
-          ))}
-        </div>
-      </section>
+            {categories.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => setSelectedCategory(cat.name)}
+                className={`px-4 py-2 rounded-xl text-xs font-bold shrink-0 transition flex items-center gap-1.5 cursor-pointer ${
+                  selectedCategory === cat.name
+                    ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
+                    : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
+                }`}
+              >
+                <span>{cat.name}</span>
+              </button>
+            ))}
+          </div>
+        </section>
       )}
 
       {/* Featured Shops Grid */}
@@ -276,19 +272,21 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
               <Store className="w-5 h-5 text-emerald-600" />
               <span>
                 {isShopOwner
-                  ? 'मार्केटप्लेस - केवल आपकी जोड़ी गई दुकान (Your Registered Storefront)'
-                  : 'All Shop Stores & Digital Storefronts'}
+                  ? t('shops.heading_merchant', 'Marketplace - Your Registered Storefront Only')
+                  : t('shops.heading_customer', 'All Shop Stores & Digital Storefronts')}
               </span>
             </h2>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-500 font-semibold">
               {isShopOwner
-                ? 'मार्केटप्लेस में केवल आपकी अपनी जोड़ी गई दुकान और उत्पाद प्रदर्शित हैं, अन्य किसी विक्रेता की दुकान नहीं।'
+                ? t('shops.subheading_merchant', 'Marketplace displays only your own registered store. Other merchants are isolated.')
+                : isHindi
+                ? `${selectedCity || 'सभी शहर'} में सत्यापित स्थानीय दुकानें`
                 : `Showing verified local businesses in ${selectedCity || 'All Cities'}`}
             </p>
           </div>
 
           {!isShopOwner && selectedCategory !== 'All' && (
-            <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md self-start sm:self-auto border border-emerald-200">
+            <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md self-start sm:self-auto border border-emerald-200">
               Filter: {selectedCategory}
             </span>
           )}
@@ -304,18 +302,20 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
           <div className="text-center py-16 bg-white rounded-3xl border border-slate-200 p-8 max-w-md mx-auto">
             <Store className="w-12 h-12 text-slate-300 mx-auto mb-3" />
             <h3 className="text-base font-bold text-slate-800">
-              {isShopOwner ? 'आपकी कोई दुकान अभी तक नहीं जुड़ी है' : 'No shops found matching your criteria'}
+              {isShopOwner
+                ? t('shops.empty_merchant_title', 'No store registered yet')
+                : t('shops.empty_customer_title', 'No shops found')}
             </h3>
             <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
               {isShopOwner
-                ? 'मार्केटप्लेस में लाइव आने के लिए नीचे दिए गए बटन से अपनी दुकान जोड़ें।'
-                : 'Try selecting a different city or category, or be the first merchant to open a store here!'}
+                ? t('shops.empty_merchant_desc', 'Click below to register your store and get live on the marketplace.')
+                : t('shops.empty_customer_desc', 'Try selecting a different city or category, or open the first store here!')}
             </p>
             <button
               onClick={onOpenVendorOnboarding}
               className="mt-4 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-sm cursor-pointer"
             >
-              {isShopOwner ? '➕ अपनी दुकान जोड़ें (Register Your Store)' : 'Register Your Shop on YUNAY'}
+              {t('shops.btn_add_store', '➕ Create Your Digital Storefront')}
             </button>
           </div>
         ) : (
@@ -346,7 +346,7 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
                       </span>
                       {isShopOwner && (
                         <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-emerald-600 text-white shadow-xs">
-                          👑 आपकी दुकान
+                          {t('shops.your_store', '👑 Your Store')}
                         </span>
                       )}
                     </div>
@@ -358,7 +358,7 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
                           shop.isTemporarilyClosed ? 'bg-amber-400' : 'bg-emerald-400 animate-pulse'
                         }`}
                       />
-                      <span>{shop.isTemporarilyClosed ? 'Closed Now' : 'Open'}</span>
+                      <span>{shop.isTemporarilyClosed ? t('shops.closed', 'Closed Now') : t('shops.open', 'Open Now')}</span>
                     </div>
 
                     {/* Logo & City Title in Cover */}
@@ -388,20 +388,20 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
                   {/* Body description & terms */}
                   <div className="p-4 space-y-3">
                     <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">
-                      {shop.description || 'Welcome to our digital storefront on YUNAY.'}
+                      {shop.description || (isHindi ? 'YUNAY पर हमारी डिजिटल दुकान में आपका स्वागत है।' : 'Welcome to our digital storefront on YUNAY.')}
                     </p>
 
                     <div className="grid grid-cols-2 gap-2 text-[11px] bg-slate-50 p-2.5 rounded-xl border border-slate-100">
-                      <div className="flex items-center gap-1 text-slate-600">
+                      <div className="flex items-center gap-1 text-slate-600 font-semibold">
                         <Clock className="w-3 h-3 text-emerald-600" />
                         <span>
                           {shop.openingTime} - {shop.closingTime}
                         </span>
                       </div>
-                      <div className="flex items-center gap-1 text-slate-600">
+                      <div className="flex items-center gap-1 text-slate-600 font-semibold">
                         <Truck className="w-3 h-3 text-emerald-600" />
                         <span>
-                          Delivery: {Number(shop.deliveryFee) === 0 ? 'Free' : `₹${shop.deliveryFee}`}
+                          {t('shops.delivery', 'Delivery')}: {Number(shop.deliveryFee) === 0 ? t('shops.delivery_free', 'Free') : `₹${shop.deliveryFee}`}
                         </span>
                       </div>
                     </div>
@@ -420,17 +420,17 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
                       className="text-xs font-black text-emerald-700 hover:text-emerald-800 flex items-center gap-1 cursor-pointer"
                     >
                       <Building2 className="w-3.5 h-3.5" />
-                      <span>मैनेज करें (Manage Profile)</span>
+                      <span>{t('shops.btn_manage', '🏢 Manage Company Profile')}</span>
                     </button>
                   ) : (
                     <div className="flex items-center gap-1 text-[11px] font-bold text-slate-500">
-                      <span>Powered by</span>
+                      <span>{t('shops.powered_by', 'Powered by')}</span>
                       <span className="text-emerald-700 font-extrabold">YUNAY</span>
                     </div>
                   )}
 
                   <span className="text-xs font-bold text-emerald-600 group-hover:text-emerald-700 flex items-center gap-1">
-                    <span>{isShopOwner ? 'स्टोर खोलें (Open Store)' : 'Enter Store'}</span>
+                    <span>{t('shops.btn_enter', 'Enter Store')}</span>
                     <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition" />
                   </span>
                 </div>
@@ -449,14 +449,14 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
                 <Flame className="w-5 h-5 text-amber-500" />
                 <span>
                   {isShopOwner
-                    ? 'आपकी दुकान के मुख्य उत्पाद (Your Store Products)'
-                    : 'Popular Neighborhood Products'}
+                    ? t('prod.heading_merchant', 'Your Store Products')
+                    : t('prod.heading_customer', 'Popular Neighborhood Products')}
                 </span>
               </h2>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-500 font-semibold">
                 {isShopOwner
-                  ? 'केवल आपकी दुकान में जोड़े गए उत्पाद'
-                  : 'Fresh items and bestsellers from active neighborhood shops'}
+                  ? t('prod.subheading_merchant', 'Products added exclusively to your storefront')
+                  : t('prod.subheading_customer', 'Fresh items and bestsellers from active neighborhood shops')}
               </p>
             </div>
           </div>
@@ -479,7 +479,7 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
                     />
                     {Number(product.discountPrice) > 0 && (
                       <span className="absolute top-2 left-2 bg-rose-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow-xs">
-                        SAVE ₹{Math.round(Number(product.price) - Number(product.discountPrice))}
+                        {t('prod.save', 'SAVE')} ₹{Math.round(Number(product.price) - Number(product.discountPrice))}
                       </span>
                     )}
                   </div>
@@ -488,7 +488,7 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
                     onClick={() => onSelectShop(shop.slug)}
                     className="text-[10px] text-slate-500 hover:text-emerald-700 font-semibold truncate cursor-pointer"
                   >
-                    From {shop.name}
+                    {t('prod.from', 'From')} {shop.name}
                   </p>
 
                   <h3 className="text-xs font-bold text-slate-800 line-clamp-1 mt-0.5">
@@ -515,14 +515,14 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
                       onClick={() => onSelectShop(shop.slug)}
                       className="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white rounded-lg text-xs font-bold transition border border-emerald-200 cursor-pointer"
                     >
-                      View
+                      {t('prod.btn_view', 'View')}
                     </button>
                   ) : (
                     <button
                       onClick={() => addToCart(product, shop)}
-                      className="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white rounded-lg text-xs font-bold transition border border-emerald-200"
+                      className="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white rounded-lg text-xs font-bold transition border border-emerald-200 cursor-pointer"
                     >
-                      Add +
+                      {t('prod.btn_add_cart', 'Add +')}
                     </button>
                   )}
                 </div>
